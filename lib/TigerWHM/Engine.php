@@ -71,6 +71,7 @@ class TigerWHM_Engine
     public function check(array $spec)      { return $this->run('check',   ['spec' => '-'], json_encode($spec)); }
     public function install(array $spec)    { return $this->run('install', ['spec' => '-'], json_encode($spec)); }
     public function status($appRoot)        { return $this->run('status',  ['app-root' => $appRoot]); }
+    public function login($appRoot, $email = '') { return $this->run('login', ['app-root' => $appRoot] + ($email !== '' ? ['email' => $email] : [])); }
     public function upgrade($appRoot, $v='') { return $this->run('upgrade', ['app-root' => $appRoot] + ($v !== '' ? ['version' => $v] : [])); }
     public function discover($root, $updates = false, $depth = 4)
     {

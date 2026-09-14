@@ -4,8 +4,17 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Added
+
+- **Admin signs you in.** The list's Admin button mints a one-time, 2-minute sign-in link for the
+  site's founding admin (engine `login`, tiger-core ≥ 1.8.0 magic-link login) and sends the browser
+  straight into `/admin` — WP Toolkit's "Log in". Single-use, audited on the site; a replay lands on
+  the normal sign-in page. Sites on an older core keep a plain Admin link until the host updates them.
+
 ### Changed
 
+- **The flyout flies** (slide from the right + scrim fade, reduced-motion aware) and the collapsible
+  sections animate open/closed with expand/collapse ported from Tiger's `tiger.dom.js`.
 - **The account page follows the WP Toolkit shape:** toolbar (Install / Rescan / Help), the list of
   installs as the page (or an empty state), and Install as a slide-over flyout with grouped sections
   (General · Tiger Administrator · Database · AI agent), a label/field grid, Generate + show/hide on

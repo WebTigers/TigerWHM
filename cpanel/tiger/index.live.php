@@ -75,6 +75,24 @@ if ($req->method === 'POST' && $req->p('action') === 'install') {
     $openFlyout = (bool) $problems;   // errors → reopen the flyout with what they typed
 }
 
+// The Admin button: mint a one-time sign-in link for the site's founding admin (the engine, as this
+// account user) and send the browser straight into /admin — WP Toolkit's "Log in". Before any output.
+if ($req->method === 'POST' && $req->p('action') === 'login') {
+    $root = $req->p('app_root'); $host = $req->p('host');
+    if (!TigerWHM_Http::nonceOk($nonceF, $req->p('nonce'))) {
+        $problems[] = 'The form expired — please try again.';
+    } elseif (strpos($root, $home . '/') !== 0 || strpos($root, '..') !== false || !preg_match('/^[a-z0-9.-]+$/i', $host)) {
+        $problems[] = 'That install is not in this account.';
+    } elseif ($phpNew) {
+        $login = (new TigerWHM_Engine($phpNew))->login($root);
+        if (!empty($login['ok'])) {
+            header('Location: https://' . $host . $login['path'], true, 302);
+            exit;
+        }
+        $problems[] = 'Could not sign you in: ' . ($login['error']['message'] ?? 'unknown');
+    }
+}
+
 // --------------------------------------------------------------------------------------- data
 $domains = [];
 try { $domains = $acct->domains(); } catch (Throwable $ex) { $problems[] = 'Could not read this account\'s domains: ' . $ex->getMessage(); }
@@ -115,17 +133,19 @@ print $cpanel->header('Tiger Management');
 .tg-card.bad{border-left:4px solid var(--tg-bad)}.tg-card.ok{border-left:4px solid var(--tg-ok)}
 .tg-steps{list-style:none;padding:0;margin:.5rem 0 0}.tg-steps li{padding:.2rem 0;font-size:.9rem}.tg-steps code{font-size:.85rem}
 /* Flyout */
-.tg-scrim{position:fixed;inset:0;background:rgba(20,26,34,.45);z-index:1040;display:none}
-.tg-fly{position:fixed;top:0;right:0;bottom:0;width:min(780px,100%);background:#fff;z-index:1050;display:none;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.18);margin:0}
-.tg.open .tg-scrim{display:block}.tg.open .tg-fly{display:flex}
+.tg-scrim{position:fixed;inset:0;background:rgba(20,26,34,.45);z-index:1040;opacity:0;visibility:hidden;transition:opacity .25s ease,visibility 0s linear .25s}
+.tg-fly{position:fixed;top:0;right:0;bottom:0;width:min(780px,100%);background:#fff;z-index:1050;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.18);margin:0;transform:translateX(100%);visibility:hidden;transition:transform .3s cubic-bezier(.4,0,.2,1),visibility 0s linear .3s}
+.tg.open .tg-scrim{opacity:1;visibility:visible;transition:opacity .25s ease}.tg.open .tg-fly{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+@media (prefers-reduced-motion:reduce){.tg-scrim,.tg-fly{transition:none}}
 .tg-fly-head{padding:1.5rem 2rem 1rem;border-bottom:1px solid var(--tg-line);position:relative}.tg-fly-head h2{font-size:1.8rem;font-weight:400;margin:0}.tg-fly-head p{margin:.25rem 0 0;color:var(--tg-ink)}
 .tg-x{position:absolute;right:1.5rem;top:1.4rem;border:0;background:none;font-size:1.6rem;line-height:1;color:var(--tg-muted);cursor:pointer}
 .tg-fly-body{padding:1.25rem 2rem;overflow:auto;flex:1}
 .tg-fly-foot{padding:1rem 2rem;border-top:1px solid var(--tg-line);display:flex;gap:.6rem;background:#fff}
 .tg-hint{color:var(--tg-ink);margin:0 0 1rem}
 .tg-sec{margin:1.25rem 0 .5rem}.tg-sec h3{font-size:1.35rem;font-weight:600;margin:0 0 .25rem}
-.tg-sec.col summary{font-size:1.35rem;font-weight:600;cursor:pointer;list-style:none;margin:0 0 .25rem}.tg-sec.col summary::-webkit-details-marker{display:none}
-.tg-sec.col summary::before{content:"›";display:inline-block;width:1.2rem;color:var(--tg-muted);transition:transform .15s}.tg-sec.col[open] summary::before{transform:rotate(90deg)}
+.tg-sec.col .tg-sum{font-size:1.35rem;font-weight:600;cursor:pointer;margin:0 0 .25rem;background:none;border:0;padding:0;font-family:inherit;color:inherit;display:flex;align-items:center;gap:.2rem}
+.tg-sec.col .tg-sum::before{content:"›";display:inline-block;width:1.2rem;color:var(--tg-muted);transition:transform .2s}.tg-sec.col.is-open .tg-sum::before{transform:rotate(90deg)}
+.tg-sec.col .tg-panel{display:none}
 .tg-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:1.1rem 1rem;align-items:center;margin:.75rem 0}
 .tg-grid label.l{color:var(--tg-ink)}
 .tg-in{width:100%;max-width:420px;padding:.55rem .7rem;border:1px solid #c9ced4;border-radius:3px;font:inherit;background:#fff}.tg-in:focus{outline:2px solid #bcd6f8;border-color:var(--tg-blue)}
@@ -148,6 +168,8 @@ print $cpanel->header('Tiger Management');
     <a class="tg-btn" href="?rescan=1">Rescan</a>
     <a class="tg-help" href="https://tiger.webtigers.com/docs" target="_blank" rel="noopener">ⓘ Help</a>
   </div>
+
+  <?php if ($problems && !$openFlyout): ?><div class="tg-card bad"><strong>Please fix:</strong><ul><?php foreach ($problems as $p): ?><li><?= $e($p) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
 
   <?php if ($result): ?>
     <?php if (!empty($result['ok']) && empty($result['already_installed'])): ?>
@@ -181,7 +203,9 @@ print $cpanel->header('Tiger Management');
         <td class="tg-site"><?php if ($url): ?><a href="<?= $e($url) ?>" target="_blank" rel="noopener"><?= $e($dom) ?></a><?php else: ?><?= $e(basename(dirname((string) $i['app_root']))) ?><?php endif; ?><small><?= $e($i['app_root']) ?></small></td>
         <td><?= $e($i['version']) ?><?php if (!empty($i['update_available'])): ?> <span class="tg-pill warn" title="Your host updates from WHM">→ <?= $e($i['latest']) ?> available</span><?php endif; ?></td>
         <td><?= $i['installed'] === true ? '<span class="tg-pill ok">Live</span>' : ($i['installed'] === null ? '<span class="tg-pill mute">Unknown</span>' : '<span class="tg-pill bad">Not finished</span>') ?></td>
-        <td style="text-align:right;white-space:nowrap"><?php if ($url): ?><a class="tg-btn" href="<?= $e($url) ?>/admin" target="_blank" rel="noopener">Admin</a><?php endif; ?></td>
+        <td style="text-align:right;white-space:nowrap"><?php if ($dom && $i['installed'] === true): ?>
+          <form method="post" target="_blank" style="display:inline"><input type="hidden" name="action" value="login"><input type="hidden" name="nonce" value="<?= $e($nonce) ?>"><input type="hidden" name="app_root" value="<?= $e($i['app_root']) ?>"><input type="hidden" name="host" value="<?= $e($dom) ?>"><button type="submit" class="tg-btn" title="Sign in to this site's admin as its owner">Admin</button></form>
+        <?php elseif ($url): ?><a class="tg-btn" href="<?= $e($url) ?>/admin" target="_blank" rel="noopener">Admin</a><?php endif; ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody></table>
@@ -236,7 +260,7 @@ print $cpanel->header('Tiger Management');
         <input class="tg-in" id="tg-email" name="email" type="email" required value="<?= $e($form['email'] ?? '') ?>">
       </div>
 
-      <details class="tg-sec col"><summary>Database</summary>
+      <div class="tg-sec col"><button type="button" class="tg-sum" data-tg-toggle aria-expanded="false">Database</button><div class="tg-panel">
         <p class="tg-note">Created for you through cPanel. Change the names only if you need to.</p>
         <div class="tg-grid">
           <label class="l" for="tg-dbn">Database name</label>
@@ -246,15 +270,15 @@ print $cpanel->header('Tiger Management');
           <label class="l" for="tg-dbp">Database user password</label>
           <div class="tg-inline"><span class="tg-pw"><input class="tg-in" id="tg-dbp" name="db_password" type="password" placeholder="generated"><button type="button" class="tg-eye" data-tg-eye="tg-dbp" aria-label="Show"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span><button type="button" class="tg-btn" data-tg-gen="tg-dbp">Generate</button></div>
         </div>
-      </details>
+      </div></div>
 
       <?php if (!empty($cfg['allow_agent'])): ?>
-      <details class="tg-sec col"><summary>AI agent</summary>
+      <div class="tg-sec col"><button type="button" class="tg-sum" data-tg-toggle aria-expanded="false">AI agent</button><div class="tg-panel">
         <div class="tg-grid">
           <label class="l">Connect an agent</label>
           <label><input type="checkbox" name="agent" value="1" <?= !empty($form['agent']) ? 'checked' : '' ?>> Mint a credential for Tiger's MCP endpoint at install <span class="tg-muted">(shown once on the result)</span></label>
         </div>
-      </details>
+      </div></div>
       <?php endif; ?>
 
       <p class="tg-note" style="margin-top:1.25rem">Tiger installs <em>above</em> the document root — your configuration and secrets are never web-reachable. Your existing sites are not touched.</p>
@@ -270,12 +294,49 @@ print $cpanel->header('Tiger Management');
 
 <script>
 (function () {
+  // expand/collapse ported from Tiger's tiger.dom.js (Web Animations API, interruptible, reduced-motion aware).
+  var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var D = { expand: 240, fade: 140, easing: 'cubic-bezier(.4, 0, .2, 1)' };
+  function cancel(el) { if (el.__a) { try { el.__a.cancel(); } catch (e) {} el.__a = null; } }
+  function run(el, frames, ms) { var a = el.animate(frames, { duration: ms, easing: D.easing }); el.__a = a; return a.finished; }
+  function expand(el) {
+    var gen = (el.__g = (el.__g || 0) + 1); cancel(el); el.__open = true; el.style.display = 'block';
+    if (REDUCE) { el.style.height = ''; el.style.overflow = ''; el.style.opacity = ''; return Promise.resolve(); }
+    el.style.height = ''; var target = el.scrollHeight; el.style.overflow = 'hidden'; el.style.opacity = '0'; el.style.height = target + 'px';
+    return run(el, [{ height: '0px' }, { height: target + 'px' }], D.expand).then(function () {
+      if (el.__g !== gen) { return; } el.style.height = ''; el.style.overflow = ''; el.style.opacity = '1';
+      return run(el, [{ opacity: 0 }, { opacity: 1 }], D.fade);
+    }).then(function () { if (el.__g === gen) { el.style.opacity = ''; el.__a = null; } }).catch(function () {});
+  }
+  function collapse(el) {
+    var gen = (el.__g = (el.__g || 0) + 1); cancel(el); el.__open = false;
+    if (REDUCE) { el.style.display = 'none'; el.style.height = ''; el.style.overflow = ''; el.style.opacity = ''; return Promise.resolve(); }
+    el.style.overflow = 'hidden'; el.style.opacity = '0';
+    return run(el, [{ opacity: 1 }, { opacity: 0 }], D.fade).then(function () {
+      if (el.__g !== gen) { return; } var start = el.scrollHeight; el.style.height = '0px';
+      return run(el, [{ height: start + 'px' }, { height: '0px' }], D.expand);
+    }).then(function () { if (el.__g !== gen) { return; } el.style.display = 'none'; el.style.height = ''; el.style.overflow = ''; el.style.opacity = ''; el.__a = null; }).catch(function () {});
+  }
+
   var root = document.getElementById('tg');
-  function open()  { root.classList.add('open');  var f = document.getElementById('tg-domain'); if (f) { f.focus(); } }
+  function open()  { root.classList.add('open'); setTimeout(function () { var f = document.getElementById('tg-domain'); if (f) { f.focus(); } }, 320); }
   function close() { root.classList.remove('open'); }
   root.querySelectorAll('[data-tg-open]').forEach(function (b) { b.addEventListener('click', open); });
   root.querySelectorAll('[data-tg-close]').forEach(function (b) { b.addEventListener('click', close); });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { close(); } });
+  root.querySelectorAll('[data-tg-toggle]').forEach(function (b) {
+    var sec = b.parentNode, panel = sec.querySelector('.tg-panel');
+    b.addEventListener('click', function () {
+      var on = !sec.classList.contains('is-open');
+      sec.classList.toggle('is-open', on); b.setAttribute('aria-expanded', on ? 'true' : 'false');
+      (on ? expand : collapse)(panel);
+    });
+  });
+  // A section holding a value the server bounced (e.g. a bad database name) opens itself.
+  root.querySelectorAll('.tg-sec.col').forEach(function (sec) {
+    var dirty = Array.prototype.some.call(sec.querySelectorAll('input:not([type=hidden])'), function (i) { return i.type === 'checkbox' ? i.checked : i.value !== ''; });
+    if (dirty) { sec.classList.add('is-open'); sec.querySelector('.tg-sum').setAttribute('aria-expanded', 'true'); sec.querySelector('.tg-panel').style.display = 'block'; }
+  });
   function gen(n) { var a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789', o = '', r = new Uint32Array(n); crypto.getRandomValues(r); for (var i = 0; i < n; i++) { o += a[r[i] % a.length]; } return o; }
   root.querySelectorAll('[data-tg-gen]').forEach(function (b) { b.addEventListener('click', function () { var i = document.getElementById(b.getAttribute('data-tg-gen')); i.value = gen(20); i.type = 'text'; }); });
   root.querySelectorAll('[data-tg-eye]').forEach(function (b) { b.addEventListener('click', function () { var i = document.getElementById(b.getAttribute('data-tg-eye')); i.type = i.type === 'password' ? 'text' : 'password'; }); });

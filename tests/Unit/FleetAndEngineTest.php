@@ -26,6 +26,7 @@ final class FleetAndEngineTest extends TestCase
                 ]]), ''];
             }
             if (str_contains($cmd, "'upgrade'")) { return [0, json_encode(['ok' => true, 'verb' => 'upgrade', 'version' => '1.7.0', 'steps' => []]), '']; }
+            if (str_contains($cmd, "'login'"))   { return [0, json_encode(['ok' => true, 'verb' => 'login', 'path' => '/auth/magic/id/x/t/y', 'expires_in' => 120, 'email' => 'o@x']), '']; }
             if (str_contains($cmd, "'check'"))   { return [0, json_encode(['ok' => true, 'verb' => 'check', 'steps' => [['step' => 'requirements', 'status' => 'ok', 'detail' => 'fine']]]), '']; }
             return [1, '', 'boom'];
         };
@@ -101,6 +102,13 @@ final class FleetAndEngineTest extends TestCase
         $this->assertStringNotContainsString('S3cret', $cmd);
         $this->assertStringContainsString('"S3cret"', $stdin);
         $this->assertStringContainsString("'--spec=-'", $cmd);
+    }
+
+    public function testLoginVerbReturnsThePathAndNeverPutsAnEmailInArgvUnescaped(): void
+    {
+        $r = (new TigerWHM_Engine('/php'))->login('/home/a/site/tiger-app', "o'x@example.com");
+        $this->assertSame('/auth/magic/id/x/t/y', $r['path']);
+        $this->assertStringContainsString("'--email=o'\\''x@example.com'", end($this->cmds)[0], 'shell-escaped');
     }
 
     public function testPhpForRespectsTheMinimum(): void
