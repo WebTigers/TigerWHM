@@ -2,7 +2,10 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
-## [Unreleased]
+## [0.2.0] — 2026-09-14
+
+The WP Toolkit shape, sign-in from the list, skill packs, and a live catalog. Engine v0.6.0.
+
 
 ### Added
 
