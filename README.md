@@ -19,6 +19,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/inst
   plugin release). One click: the database and user are created through cPanel's own API, then the
   install runs — **above the document root**, under the domain's own PHP. The page reports the admin
   URL, or exactly which step stopped and why (submit again and it resumes from that step).
+- **Skills** — packs of Agent Skills (Web design, Content & publishing, Development, Documents & files)
+  installed as a set; add or remove any later from Tiger's own Skills screen.
+- **The lists are live.** Themes and modules come from the [Directory](https://github.com/WebTigers/TigerVendors)
+  feed; what's featured and the skill packs from
+  [`install/catalog.json`](https://github.com/WebTigers/TigerVendors/blob/main/install/catalog.json).
+  Change either on `main` and every new install everywhere sees it — no host updates anything.
 - Installing beside an existing site is the ordinary case (a subdomain of a WordPress account, say);
   the existing site and its `.htaccess` are never touched.
 

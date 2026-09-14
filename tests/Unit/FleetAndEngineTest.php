@@ -135,10 +135,37 @@ final class FleetAndEngineTest extends TestCase
         $this->assertFalse(TigerWHM_Directory::filter(null)['available']);
     }
 
+    public function testCatalogNormalizesAndExpandsPacks(): void
+    {
+        $doc = json_decode((string) file_get_contents(__DIR__ . '/../../cpanel/catalog.snapshot.json'), true);
+        $c = TigerWHM_Catalog::normalize($doc);
+        $this->assertSame('theme-grey-mist', $c['featured']['theme']);
+        $this->assertSame(['docs'], $c['featured']['modules']);
+        $this->assertSame(['web-design', 'content', 'development', 'documents'], array_column($c['skill_packs'], 'id'));
+        $skills = TigerWHM_Catalog::skillsFor($c, ['web-design', 'content']);
+        $this->assertCount(9, $skills);
+        $this->assertSame(['repo' => 'WebTigers/Skills', 'path' => 'skills/tiger-design', 'ref' => 'main'], $skills[0]);
+        $this->assertSame('master', $skills[8]['ref'], 'a pack entry may pin a ref');
+        // Junk upstream degrades, never fatals.
+        $j = TigerWHM_Catalog::normalize(['skill_packs' => [['id' => 'Bad Id', 'skills' => [['repo' => 'x', 'path' => 'y']]], ['id' => 'ok', 'skills' => [['repo' => 'a/b', 'path' => '../x'], ['repo' => 'a/b', 'path' => 'good']]]]]);
+        $this->assertSame(['ok'], array_column($j['skill_packs'], 'id'));
+        $this->assertCount(1, $j['skill_packs'][0]['skills']);
+        $this->assertSame(['featured' => ['theme' => '', 'modules' => []], 'skill_packs' => []], TigerWHM_Catalog::normalize('garbage'));
+    }
+
+    public function testHostDefaultsFollowTheCatalogUnlessOverridden(): void
+    {
+        $cat = TigerWHM_Catalog::normalize(json_decode((string) file_get_contents(__DIR__ . '/../../cpanel/catalog.snapshot.json'), true));
+        $pre = TigerWHM_Config::preselect(TigerWHM_Config::normalize(TigerWHM_Config::defaults()), $cat);
+        $this->assertSame(['theme' => 'theme-grey-mist', 'modules' => ['docs'], 'skill_packs' => ['web-design', 'content']], $pre);
+        $pre = TigerWHM_Config::preselect(TigerWHM_Config::normalize(['theme' => '', 'modules' => ['docs', 'tigershield'], 'skill_packs' => ['development']]), $cat);
+        $this->assertSame(['theme' => '', 'modules' => ['docs', 'tigershield'], 'skill_packs' => ['development']], $pre, 'the host chose: no theme, two modules, one pack');
+    }
+
     public function testConfigNormalizeCoercesAndRefusesJunk(): void
     {
         $c = TigerWHM_Config::normalize(['theme' => 'Theme Grey!', 'modules' => ['docs', 'Docs', 'bad slug'], 'locale' => 'en_US', 'branding' => '<b>Acme</b> Hosting', 'mail' => ['transport' => 'sendmail', 'host' => 'relay;rm', 'port' => 99999], 'min_php' => 'php8', 'allow_agent' => '1']);
-        $this->assertSame('', $c['theme']);
+        $this->assertSame('', $c['theme'], 'a set-but-bad theme becomes "" (Tiger default), not null (follow the catalog)');
         $this->assertSame(['docs'], $c['modules']);
         $this->assertSame('en', $c['locale']);
         $this->assertSame('Acme Hosting', $c['branding']);

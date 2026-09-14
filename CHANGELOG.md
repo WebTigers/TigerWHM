@@ -6,6 +6,15 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ### Added
 
+- **Skills, as packs.** A Skills section in the flyout offers *groups* of Agent Skills ("Web design",
+  "Content & publishing", "Development", "Documents & files") installed as a set — nobody picks
+  nineteen skills one by one. Installed + activated at install through Tiger's own skills store
+  (engine 0.6.0).
+- **Everything offered comes live from a public repo.** Themes and modules from the Directory feed
+  (as before); what is featured and the skill packs from
+  `WebTigers/TigerVendors/install/catalog.json` (`TigerWHM_Catalog`, cached hourly, bundled snapshot
+  as the last resort). Add, remove or re-group and every new install on every host sees it — no plugin
+  update. Host defaults default to "follow the catalog" per row, with an override.
 - **Admin signs you in.** The list's Admin button mints a one-time, 2-minute sign-in link for the
   site's founding admin (engine `login`, tiger-core ≥ 1.8.0 magic-link login) and sends the browser
   straight into `/admin` — WP Toolkit's "Log in". Single-use, audited on the site; a replay lands on

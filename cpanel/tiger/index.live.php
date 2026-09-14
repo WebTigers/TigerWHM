@@ -38,7 +38,9 @@ if ($req->method === 'POST' && $req->p('action') === 'install') {
         'theme' => $req->p('theme'), 'modules' => (array) $req->p('modules', []), 'agent' => $req->p('agent') === '1', 'https' => $req->p('https', '1') === '1',
         'db_name' => $req->p('db_name'), 'db_user' => $req->p('db_user'), 'db_password' => (string) ($req->post['db_password'] ?? ''),
         'password_generated' => $req->p('password_generated') === '1',
+        'packs' => array_values(array_filter(array_map('strval', (array) $req->p('packs', [])))),
     ];
+    $form['skills'] = TigerWHM_Catalog::skillsFor(TigerWHM_Catalog::load($home . '/.tigerwhm'), $form['packs']);
     if (!TigerWHM_Http::nonceOk($nonceF, $req->p('nonce'))) {
         $problems[] = 'The form expired — please try again.';
     } else {
@@ -97,6 +99,8 @@ if ($req->method === 'POST' && $req->p('action') === 'login') {
 $domains = [];
 try { $domains = $acct->domains(); } catch (Throwable $ex) { $problems[] = 'Could not read this account\'s domains: ' . $ex->getMessage(); }
 $feed = TigerWHM_Directory::installables($home . '/.tigerwhm');
+$catalog = TigerWHM_Catalog::load($home . '/.tigerwhm');
+$pre     = TigerWHM_Config::preselect($cfg, $catalog);
 $mine = $phpNew ? (new TigerWHM_Engine($phpNew))->discover($home, true) : ['installs' => [], 'summary' => []];
 $byDocroot = [];
 foreach ((array) ($mine['installs'] ?? []) as $i) { if (!empty($i['docroot'])) { $byDocroot[rtrim($i['docroot'], '/')] = $i; } }
@@ -156,6 +160,7 @@ print $cpanel->header('Tiger Management');
 .tg-opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.5rem 1rem;max-width:720px}.tg-opts label{display:flex;gap:.45rem;align-items:baseline}
 .tg-opts small{color:var(--tg-muted)}
 .tg-note{font-size:.9rem;color:var(--tg-muted);margin:0 0 1rem}
+.tg-packs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.75rem 1.25rem;margin:0 0 .5rem}.tg-pack{display:flex;gap:.6rem;align-items:flex-start;padding:.75rem .9rem;border:1px solid var(--tg-line);border-radius:4px;background:#fafbfc;line-height:1.4}.tg-pack input{margin-top:.3rem}.tg-pack:has(input:checked){border-color:var(--tg-blue);background:#f3f8ff}
 .tg-busy{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:1060;display:none;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;font-size:1.1rem}
 .tg.busy .tg-busy{display:flex}.tg-spin{width:40px;height:40px;border:4px solid #dfe3e8;border-top-color:var(--tg-blue);border-radius:50%;animation:tgspin 1s linear infinite}@keyframes tgspin{to{transform:rotate(360deg)}}
 @media (max-width:640px){.tg-grid{grid-template-columns:1fr;gap:.35rem}.tg-fly-head,.tg-fly-body,.tg-fly-foot{padding-left:1.1rem;padding-right:1.1rem}}
@@ -175,6 +180,7 @@ print $cpanel->header('Tiger Management');
     <?php if (!empty($result['ok']) && empty($result['already_installed'])): ?>
       <div class="tg-card ok"><h3>Tiger is installed</h3>
         <p>Sign in at <a href="<?= $e($result['admin_url']) ?>" target="_blank"><?= $e($result['admin_url']) ?></a> as <strong><?= $e($result['login']['email'] ?? '') ?></strong><?php if (!empty($form['password_generated'])): ?> — generated password (shown once, copy it now): <code><?= $e($form['password']) ?></code><?php else: ?> with the password you chose.<?php endif; ?></p>
+        <?php if (!empty($result['skills']['installed'])): ?><p class="tg-muted"><?= count($result['skills']['installed']) ?> agent skills installed<?= !empty($result['skills']['failed']) ? '; could not fetch: ' . $e(implode(', ', $result['skills']['failed'])) : '' ?>.</p><?php endif; ?>
         <?php if (!empty($result['agent']['token'])): ?><p><strong>AI agent credential</strong> (shown once — copy it now): <code><?= $e($result['agent']['token']) ?></code><br>Endpoint: <code><?= $e($result['agent']['endpoint']) ?></code></p><?php endif; ?>
         <details><summary class="tg-muted">Steps</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="tg-ok"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
       </div>
@@ -236,11 +242,11 @@ print $cpanel->header('Tiger Management');
         <label class="l" for="tg-theme">Theme</label>
         <select class="tg-in" id="tg-theme" name="theme">
           <option value="">Tiger default</option>
-          <?php foreach ($feed['themes'] as $t): ?><option value="<?= $e($t['slug']) ?>" <?= ($form['theme'] ?? $cfg['theme']) === $t['slug'] ? 'selected' : '' ?>><?= $e($t['name']) ?> <?= $e($t['version']) ?></option><?php endforeach; ?>
+          <?php foreach ($feed['themes'] as $t): ?><option value="<?= $e($t['slug']) ?>" <?= ($form['theme'] ?? $pre['theme']) === $t['slug'] ? 'selected' : '' ?>><?= $e($t['name']) ?> <?= $e($t['version']) ?></option><?php endforeach; ?>
         </select>
         <label class="l">Modules</label>
         <div class="tg-opts">
-          <?php if ($feed['available']): foreach ($feed['modules'] as $m): $on = in_array($m['slug'], isset($form['modules']) ? $form['modules'] : $cfg['modules'], true); ?>
+          <?php if ($feed['available']): foreach ($feed['modules'] as $m): $on = in_array($m['slug'], isset($form['modules']) ? $form['modules'] : $pre['modules'], true); ?>
             <label title="<?= $e($m['description']) ?>"><input type="checkbox" name="modules[]" value="<?= $e($m['slug']) ?>" <?= $on ? 'checked' : '' ?>> <span><?= $e($m['name']) ?> <small><?= $e($m['version']) ?></small></span></label>
           <?php endforeach; else: ?><span class="tg-muted">The module directory isn't reachable right now — add modules later from Tiger's Module Manager.</span><?php endif; ?>
         </div>
@@ -249,6 +255,17 @@ print $cpanel->header('Tiger Management');
         <label class="l">Protocol</label>
         <label><input type="checkbox" name="https" value="1" <?= ($form['https'] ?? true) ? 'checked' : '' ?>> Use HTTPS <span class="tg-muted">(run AutoSSL first if the domain has no certificate)</span></label>
       </div>
+
+      <?php if ($catalog['skill_packs']): ?>
+      <div class="tg-sec"><h3>Skills</h3></div>
+      <p class="tg-note">Know-how for Tiger's AI agent, installed as sets. Add or remove any later from Settings → Agent → Skills.</p>
+      <div class="tg-packs">
+        <?php foreach ($catalog['skill_packs'] as $pk): $on = in_array($pk['id'], isset($form['packs']) ? $form['packs'] : $pre['skill_packs'], true); ?>
+          <label class="tg-pack"><input type="checkbox" name="packs[]" value="<?= $e($pk['id']) ?>" <?= $on ? 'checked' : '' ?>>
+            <span><strong><?= $e($pk['name']) ?></strong> <small class="tg-muted"><?= count($pk['skills']) ?> skills</small><br><span class="tg-muted"><?= $e($pk['description']) ?></span></span></label>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
 
       <div class="tg-sec"><h3>Tiger Administrator</h3></div>
       <div class="tg-grid">

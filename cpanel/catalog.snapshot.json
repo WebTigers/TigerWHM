@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "about": "What a fresh Tiger install is offered out of the gate. Read live by TigerWHM (and any installer front-end) — edit this file and every new install sees it; no host has to update anything. Themes and modules themselves come from data/index.json (the Directory); this file curates what is featured and defines the skill packs.",
+  "featured": {
+    "theme": "theme-grey-mist",
+    "modules": ["docs"]
+  },
+  "skill_packs": [
+    {
+      "id": "web-design",
+      "name": "Web design",
+      "description": "Design-led front-end work: layouts, brand systems, themes and polished UI — the skills a designer building a site with Tiger's agent reaches for first.",
+      "default": true,
+      "skills": [
+        { "repo": "WebTigers/Skills",  "path": "skills/tiger-design" },
+        { "repo": "WebTigers/Skills",  "path": "skills/ui-ux-pro-max-php" },
+        { "repo": "anthropics/skills", "path": "skills/frontend-design" },
+        { "repo": "anthropics/skills", "path": "skills/theme-factory" },
+        { "repo": "anthropics/skills", "path": "skills/brand-guidelines" },
+        { "repo": "anthropics/skills", "path": "skills/canvas-design" }
+      ]
+    },
+    {
+      "id": "content",
+      "name": "Content & publishing",
+      "description": "Writing and authoring on Tiger: pages, articles, documents and co-authored drafts with the agent.",
+      "default": true,
+      "skills": [
+        { "repo": "WebTigers/Skills",  "path": "skills/tiger-authoring" },
+        { "repo": "anthropics/skills", "path": "skills/doc-coauthoring" },
+        { "repo": "ComposioHQ/awesome-claude-skills", "ref": "master", "path": "content-research-writer" }
+      ]
+    },
+    {
+      "id": "development",
+      "name": "Development",
+      "description": "Build on Tiger the update-safe way: modules, /api web services, admin screens, tests — and MCP/Claude API know-how for AI features.",
+      "default": false,
+      "skills": [
+        { "repo": "WebTigers/Skills",  "path": "skills/tiger-module" },
+        { "repo": "WebTigers/Skills",  "path": "skills/tiger-webservice" },
+        { "repo": "WebTigers/Skills",  "path": "skills/tiger-admin-screen" },
+        { "repo": "anthropics/skills", "path": "skills/webapp-testing" },
+        { "repo": "anthropics/skills", "path": "skills/mcp-builder" },
+        { "repo": "anthropics/skills", "path": "skills/claude-api" }
+      ]
+    },
+    {
+      "id": "documents",
+      "name": "Documents & files",
+      "description": "Read and produce Word, Excel, PowerPoint and PDF files from inside Tiger's agent.",
+      "default": false,
+      "skills": [
+        { "repo": "anthropics/skills", "path": "skills/docx" },
+        { "repo": "anthropics/skills", "path": "skills/xlsx" },
+        { "repo": "anthropics/skills", "path": "skills/pptx" },
+        { "repo": "anthropics/skills", "path": "skills/pdf" }
+      ]
+    }
+  ]
+}

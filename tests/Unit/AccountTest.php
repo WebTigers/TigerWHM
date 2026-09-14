@@ -30,7 +30,7 @@ final class AccountTest extends TestCase
 
     private function acct(?TigerWHM_Cpanel $api = null, array $cfg = []): TigerWHM_Account
     {
-        return new TigerWHM_Account($api ?: $this->api(), TigerWHM_Config::normalize($cfg + TigerWHM_Config::defaults()), '/home/cpuser', 'cpuser');
+        return new TigerWHM_Account($api ?: $this->api(), TigerWHM_Config::normalize($cfg + ['theme' => 'theme-grey-mist', 'modules' => ['docs']] + TigerWHM_Config::defaults()), '/home/cpuser', 'cpuser');
     }
 
     public function testDomainsCarryDocrootKindAndPhpGate(): void

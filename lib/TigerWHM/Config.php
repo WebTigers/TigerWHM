@@ -16,8 +16,9 @@ class TigerWHM_Config
     public static function defaults()
     {
         return [
-            'theme'       => 'theme-grey-mist',
-            'modules'     => ['docs'],
+            'theme'       => null,          // null = follow the catalog's featured theme
+            'modules'     => null,          // null = follow the catalog's featured modules
+            'skill_packs' => null,          // null = the catalog's default packs
             'locale'      => 'en',
             'branding'    => '',            // one line shown on the account's install page ("Provided by Acme Hosting")
             'mail'        => ['transport' => '', 'host' => '', 'port' => 25],   // a relay the host runs; blank = the box's MTA
@@ -44,8 +45,9 @@ class TigerWHM_Config
         $d = self::defaults();
         $slug = static function ($v) { $v = strtolower(trim((string) $v)); return preg_match('/^[a-z0-9][a-z0-9_-]*$/', $v) ? $v : ''; };
         $out = [
-            'theme'       => $slug($c['theme'] ?? $d['theme']),
-            'modules'     => array_values(array_unique(array_filter(array_map($slug, is_array($c['modules'] ?? null) ? $c['modules'] : $d['modules'])))),
+            'theme'       => array_key_exists('theme', $c) && $c['theme'] !== null ? $slug($c['theme']) : null,
+            'modules'     => is_array($c['modules'] ?? null) ? array_values(array_unique(array_filter(array_map($slug, $c['modules'])))) : null,
+            'skill_packs' => is_array($c['skill_packs'] ?? null) ? array_values(array_unique(array_filter(array_map($slug, $c['skill_packs'])))) : null,
             'locale'      => preg_match('/^[a-z]{2,3}$/', (string) ($c['locale'] ?? '')) ? (string) $c['locale'] : $d['locale'],
             'branding'    => trim(strip_tags((string) ($c['branding'] ?? ''))),
             'mail'        => [
@@ -68,6 +70,19 @@ class TigerWHM_Config
         $ok = @file_put_contents($path, json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n") !== false;
         if ($ok) { @chmod($path, 0644); }
         return $ok;
+    }
+
+    /**
+     * The effective pre-selections for the install form: the host's override when set, else the
+     * catalog's featured/default choices. Returns {theme, modules, skill_packs}.
+     */
+    public static function preselect(array $c, array $catalog)
+    {
+        return [
+            'theme'       => $c['theme'] !== null ? $c['theme'] : ($catalog['featured']['theme'] ?? ''),
+            'modules'     => $c['modules'] !== null ? $c['modules'] : ($catalog['featured']['modules'] ?? []),
+            'skill_packs' => $c['skill_packs'] !== null ? $c['skill_packs'] : array_column(array_filter($catalog['skill_packs'] ?? [], static function ($p) { return !empty($p['default']); }), 'id'),
+        ];
     }
 
     /** The `config` map for a headless spec from the mail defaults (only what is set). */

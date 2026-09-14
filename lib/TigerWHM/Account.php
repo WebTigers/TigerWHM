@@ -161,6 +161,7 @@ class TigerWHM_Account
             'locale'  => (string) ($form['locale'] ?? ($this->_cfg['locale'] ?? 'en')),
             'modules' => array_values(array_filter(array_map('strval', (array) ($form['modules'] ?? [])))),
             'theme'   => (string) ($form['theme'] ?? ''),
+            'skills'  => array_values((array) ($form['skills'] ?? [])),
             'agent'   => !empty($form['agent']) && !empty($this->_cfg['allow_agent']),
             'config'  => TigerWHM_Config::specConfig($this->_cfg),
         ];
