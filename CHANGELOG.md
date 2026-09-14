@@ -2,6 +2,19 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
+## [Unreleased]
+
+### Added
+
+- **The page explains what Tiger is.** A cPanel user opened this because it was in the menu; the page now
+  says why they should care — a hero ("Build a website by talking to AI."), a traditional-vs-Tiger
+  comparison, and three cards (build a website · sell something · build an app) linking to webtigers.com.
+  With sites installed the list stays on top; with none, the intro is the page (replaces the empty state).
+
+### Fixed
+
+- The result card's Steps disclosure shows a chevron and a count instead of a bare heading.
+
 ## [0.2.0] — 2026-09-14
 
 The WP Toolkit shape, sign-in from the list, skill packs, and a live catalog. Engine v0.6.0.

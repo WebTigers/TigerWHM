@@ -129,8 +129,24 @@ print $cpanel->header('Tiger Management');
 .tg-table th{font-weight:600;background:#f6f7f9;font-size:.9rem;color:var(--tg-muted)}.tg-table tr:last-child td{border-bottom:0}
 .tg-site{font-weight:600;font-size:1.02rem}.tg-site small{display:block;font-weight:400;color:var(--tg-muted);font-size:.85rem;margin-top:.15rem}
 .tg-pill{display:inline-block;padding:.15rem .55rem;border-radius:1rem;font-size:.8rem;font-weight:600}.tg-pill.ok{background:#e6f4ea;color:var(--tg-ok)}.tg-pill.warn{background:#fff4e5;color:var(--tg-warn)}.tg-pill.bad{background:#fdecea;color:var(--tg-bad)}.tg-pill.mute{background:#eef0f3;color:var(--tg-muted)}
-.tg-empty{text-align:center;padding:3.5rem 1rem 3rem;background:#fff;border:1px solid var(--tg-line)}.tg-empty h2{font-weight:600;font-size:1.35rem;margin:.25rem 0 1.25rem}.tg-empty p{color:var(--tg-muted);margin:0 0 1.5rem}
 .tg-paw{width:64px;height:64px;margin:0 auto 1rem;display:block}
+/* Intro (what Tiger is — the cPanel audience is thinking "I need a website") */
+.tg-hero{display:flex;gap:1.75rem;align-items:center;background:#fff;border:1px solid var(--tg-line);padding:2rem 2.25rem;margin:1.25rem 0 0}
+.tg-hero .tg-paw{width:72px;height:72px;margin:0;flex:0 0 72px}.tg-hero h2{font-size:1.65rem;font-weight:600;margin:0 0 .5rem;line-height:1.2}.tg-hero p{margin:0 0 1.1rem;font-size:1.02rem;max-width:62rem}
+.tg-hero.big{padding:3rem 2.5rem;margin-top:0}.tg-hero.big h2{font-size:2.1rem}.tg-hero.big p{font-size:1.1rem}
+.tg-hero .tg-cta{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}.tg-hero .tg-cta a.tg-link{color:var(--tg-blue);text-decoration:none;padding:.5rem .25rem}
+.tg-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1rem 0 0}
+.tg-cards>div{background:#fff;border:1px solid var(--tg-line);padding:1.5rem 1.6rem;display:flex;flex-direction:column}
+.tg-cards .tg-kicker{font-size:.78rem;font-weight:700;letter-spacing:.08em;color:var(--tg-muted);margin:0 0 .5rem}.tg-cards h3{font-size:1.15rem;font-weight:600;margin:0 0 .6rem}.tg-cards p{margin:0 0 1.1rem;flex:1}
+.tg-cards a{color:var(--tg-blue);text-decoration:none;font-weight:600}
+.tg-compare{background:#fff;border:1px solid var(--tg-line);padding:1.75rem 2.25rem;margin:1rem 0 0}
+.tg-compare h2{font-size:1.35rem;font-weight:600;margin:0 0 1.25rem}
+.tg-compare table{border-collapse:collapse;width:100%;max-width:56rem;margin:0 0 1.25rem}.tg-compare th{text-align:left;font-size:.8rem;font-weight:700;letter-spacing:.06em;color:var(--tg-muted);padding:.4rem .75rem .6rem;border-bottom:2px solid var(--tg-line)}
+.tg-compare td{padding:.65rem .75rem;border-bottom:1px solid var(--tg-line);width:50%}.tg-compare td:first-child{color:var(--tg-muted)}.tg-compare td+td{font-weight:600}.tg-compare tr:last-child td{border-bottom:0}
+.tg-compare .tg-after{margin:0 0 1rem;font-size:1.02rem}.tg-compare a{color:var(--tg-blue);text-decoration:none;font-weight:600}
+.tg-sites-h{font-size:1.1rem;font-weight:600;margin:.5rem 0 .6rem}
+.tg-steps-sum{cursor:pointer;list-style:none}.tg-steps-sum::-webkit-details-marker{display:none}.tg-steps-sum::before{content:"▸";display:inline-block;width:1em;transition:transform .15s}details[open]>.tg-steps-sum::before{transform:rotate(90deg)}
+@media (max-width:900px){.tg-cards{grid-template-columns:1fr}.tg-hero{flex-direction:column;align-items:flex-start;padding:1.5rem}.tg-compare{padding:1.25rem}}
 .tg-muted{color:var(--tg-muted)}.tg-ok{color:var(--tg-ok)}.tg-bad{color:var(--tg-bad)}
 /* Result / errors */
 .tg-card{background:#fff;border:1px solid var(--tg-line);padding:1.25rem 1.5rem;margin:0 0 1rem}.tg-card h3{margin:0 0 .5rem;font-size:1.2rem}.tg-card ul{margin:.5rem 0 0 1.2rem}
@@ -182,27 +198,66 @@ print $cpanel->header('Tiger Management');
         <p>Sign in at <a href="<?= $e($result['admin_url']) ?>" target="_blank"><?= $e($result['admin_url']) ?></a> as <strong><?= $e($result['login']['email'] ?? '') ?></strong><?php if (!empty($form['password_generated'])): ?> — generated password (shown once, copy it now): <code><?= $e($form['password']) ?></code><?php else: ?> with the password you chose.<?php endif; ?></p>
         <?php if (!empty($result['skills']['installed'])): ?><p class="tg-muted"><?= count($result['skills']['installed']) ?> agent skills installed<?= !empty($result['skills']['failed']) ? '; could not fetch: ' . $e(implode(', ', $result['skills']['failed'])) : '' ?>.</p><?php endif; ?>
         <?php if (!empty($result['agent']['token'])): ?><p><strong>AI agent credential</strong> (shown once — copy it now): <code><?= $e($result['agent']['token']) ?></code><br>Endpoint: <code><?= $e($result['agent']['endpoint']) ?></code></p><?php endif; ?>
-        <details><summary class="tg-muted">Steps</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="tg-ok"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
+        <details><summary class="tg-steps-sum tg-muted">Steps (<?= count((array) ($result['steps'] ?? [])) ?>)</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="tg-ok"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
       </div>
     <?php elseif (!empty($result['ok'])): ?>
       <div class="tg-card ok"><h3>Tiger was already installed there</h3><p>Version <?= $e($result['version']) ?>. Sign in at <a href="<?= $e($result['admin_url']) ?>" target="_blank"><?= $e($result['admin_url']) ?></a>.</p></div>
     <?php else: ?>
       <div class="tg-card bad"><h3>The install stopped at “<?= $e($result['error']['step'] ?? '?') ?>”</h3><p><?= $e($result['error']['message'] ?? '') ?></p>
         <p class="tg-muted">Fix what it names and run Install again with the same domain — it resumes from that step. Nothing is web-reachable until every step passes.</p>
-        <details><summary class="tg-muted">Steps</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="<?= $s['status'] === 'failed' ? 'tg-bad' : 'tg-ok' ?>"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
+        <details><summary class="tg-steps-sum tg-muted">Steps (<?= count((array) ($result['steps'] ?? [])) ?>)</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="<?= $s['status'] === 'failed' ? 'tg-bad' : 'tg-ok' ?>"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
       </div>
     <?php endif; ?>
   <?php endif; ?>
 
-  <?php if (empty($mine['installs'])): ?>
-    <div class="tg-empty">
+  <?php
+  // The intro: what Tiger is, for someone who opened this because it was in the menu. A returning user
+  // came for the list, so the list stays on top; with nothing installed the intro IS the page.
+  $intro = static function ($which) use ($mine, $phpNew, $e, $cfg) {
+      $site = 'https://webtigers.com';
+      if ($which === 'hero'): ?>
+    <section class="tg-hero<?= empty($mine['installs']) ? ' big' : '' ?>">
       <svg class="tg-paw" viewBox="0 0 24 24" aria-hidden="true"><g fill="#2f7be0"><ellipse cx="6.2" cy="9.2" rx="2.1" ry="2.7"/><ellipse cx="17.8" cy="9.2" rx="2.1" ry="2.7"/><ellipse cx="9.4" cy="5.2" rx="2.1" ry="2.8"/><ellipse cx="14.6" cy="5.2" rx="2.1" ry="2.8"/><path d="M12 10.2c-3.6 0-6.6 3.1-6.6 6.2 0 2 1.4 3.4 3.3 3.4 1.1 0 1.9-.5 3.3-.5s2.2.5 3.3.5c1.9 0 3.3-1.4 3.3-3.4 0-3.1-3-6.2-6.6-6.2z"/></g></svg>
-      <h2>You don't have Tiger sites yet.</h2>
-      <p>Install a new Tiger site on one of your domains, or on a new subdomain.</p>
-      <button type="button" class="tg-btn primary" data-tg-open <?= $phpNew ? '' : 'disabled' ?>>Install Tiger</button>
-      <?php if (!$phpNew): ?><p class="tg-bad" style="margin-top:1rem">This server has no PHP <?= $e($cfg['min_php']) ?> or newer available — ask your host.</p><?php endif; ?>
+      <div>
+        <h2>Build a website by talking to AI.</h2>
+        <p>Tiger is an AI-native website and application platform. Tell your AI what you want — a business site, a store, a membership site, a blog, a custom app — and build it without learning themes, plugins or page builders.</p>
+        <div class="tg-cta">
+          <button type="button" class="tg-btn primary" data-tg-open <?= $phpNew ? '' : 'disabled' ?>>Install Tiger</button>
+          <a class="tg-link" href="<?= $site ?>" target="_blank" rel="noopener">See what Tiger can build →</a>
+        </div>
+        <?php if (!$phpNew): ?><p class="tg-bad" style="margin:1rem 0 0">This server has no PHP <?= $e($cfg['min_php']) ?> or newer available — ask your host.</p><?php endif; ?>
+      </div>
+    </section>
+      <?php elseif ($which === 'cards'): ?>
+    <div class="tg-cards">
+      <div><p class="tg-kicker">BUILD A WEBSITE</p><h3>Just describe it.</h3><p>Tell your AI about your business and it builds the pages, navigation, content and forms you need.</p><a href="<?= $site ?>/cms" target="_blank" rel="noopener">Learn more →</a></div>
+      <div><p class="tg-kicker">SELL SOMETHING</p><h3>The business pieces are already here.</h3><p>Payments, stores, memberships, downloads and subscriptions come as Tiger modules.</p><a href="<?= $site ?>/marketplace" target="_blank" rel="noopener">Explore modules →</a></div>
+      <div><p class="tg-kicker">BUILD AN APP</p><h3>Go beyond websites.</h3><p>Tiger is a structured, extensible application platform. Your AI builds custom workflows without starting from scratch — and the site you start with never has to be replaced.</p><a href="<?= $site ?>/vibe" target="_blank" rel="noopener">See what's possible →</a></div>
     </div>
+      <?php elseif ($which === 'compare'): ?>
+    <section class="tg-compare">
+      <h2>WordPress taught you how to build a website. Tiger lets you tell AI to build one.</h2>
+      <table>
+        <thead><tr><th>TRADITIONAL WEBSITE BUILDING</th><th>TIGER</th></tr></thead>
+        <tbody>
+          <tr><td>Pick a theme</td><td>Describe what you want</td></tr>
+          <tr><td>Learn a page builder</td><td>Tell your AI what to change</td></tr>
+          <tr><td>Hunt for plugins</td><td>Add Tiger modules</td></tr>
+          <tr><td>Wire up integrations</td><td>The business pieces are already there</td></tr>
+          <tr><td>Maintain the stack</td><td>Your AI follows Tiger's architecture</td></tr>
+        </tbody>
+      </table>
+      <p class="tg-after">No page builder to learn. No plugin puzzle to assemble. No platform holding your application hostage.</p>
+      <a href="<?= $site ?>/cms" target="_blank" rel="noopener">Why Tiger? →</a>
+    </section>
+      <?php endif;
+  };
+  ?>
+
+  <?php if (empty($mine['installs'])): ?>
+    <?php $intro('hero'); $intro('compare'); $intro('cards'); ?>
   <?php else: ?>
+    <h2 class="tg-sites-h">Your Tiger sites</h2>
     <table class="tg-table"><thead><tr><th>Site</th><th>Version</th><th>Status</th><th></th></tr></thead><tbody>
     <?php foreach ($mine['installs'] as $i): $dom = $domainFor($i); $url = $dom ? 'https://' . $dom : ''; ?>
       <tr>
@@ -215,6 +270,7 @@ print $cpanel->header('Tiger Management');
       </tr>
     <?php endforeach; ?>
     </tbody></table>
+    <?php $intro('hero'); $intro('cards'); $intro('compare'); ?>
   <?php endif; ?>
 
   <!-- Install flyout -->
