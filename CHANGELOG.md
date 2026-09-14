@@ -4,18 +4,22 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Changed
+
+- The account-side entry is a **top-level cPanel left-menu item, "Tiger Management"** (`menu/LeftMenu.yaml`, order 15), not an icon in the Software grid. WHM label matches.
+
 ## [0.1.0] — 2026-09-14
 
 First release (TIGER-39). A front-end over tiger-headless (vendored, v0.4.0).
 
 ### Added
 
-- **cPanel → Software → Install Tiger** (Jupiter, LivePHP, runs as the account): the account's Tigers
+- **cPanel → left menu → Tiger Management** (a top-level nav item via `menu/LeftMenu.yaml`; Jupiter, LivePHP, runs as the account): the account's Tigers
   (whoever installed them) with version, live state, update note and Admin link; one-click install on a
   domain, addon domain or a new subdomain — database + user through UAPI, then the engine under the
   domain's own PHP; theme + modules from the Directory feed, pre-ticked to the host's defaults; optional
   AI-agent credential. The result names the admin URL, or the step that stopped and why.
-- **WHM → Plugins → Tiger** (root): the fleet (every Tiger under `/home` joined to WHM's account/vhost
+- **WHM → Plugins → Tiger Management** (root): the fleet (every Tiger under `/home` joined to WHM's account/vhost
   table — account, domain, app root, PHP, version, live state, update available) with per-install and
   select-all updates, each run as the account user under its vhost's PHP; host defaults
   (`/etc/tigerwhm/config.json`); the below-minimum-PHP gate.

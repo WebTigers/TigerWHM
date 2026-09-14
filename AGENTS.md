@@ -29,7 +29,8 @@ JSON. If the plugin needs something the engine cannot do, add it to the engine (
   PHP (unrestricted) and spawn the engine under the account's PHP; the engine itself never shells out.
 - The WHM page updates each install with `su -s /bin/sh <user> -c …` — a cPanel account's shell is
   often `noshell`.
-- Icons: cPanel's go to `/var/cpanel/plugins/<id>/` via `install_plugin`; WHM's to
+- The **left-menu item** is `menu/LeftMenu.yaml` (key = the install.json `id`, `order`, an inline white SVG). cPanel's MenuBuilder scans `/var/cpanel/plugins/*/menu/` — `install_plugin` does NOT copy us there, so `install.sh` places `/var/cpanel/plugins/tigerwhm/` itself BEFORE running `install_plugin` (which rebuilds `/var/cpanel/menus/LeftMenu.yaml` when the tarball has `menu/`). Nobody finds a Software-grid icon; the menu item is the product.
+- Icons: WHM's go to WHM's to
   `whostmgr/docroot/addon_plugins/`. `install_plugin` registers only the link/feature — the page files
   are ours to place.
 

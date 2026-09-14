@@ -9,7 +9,7 @@ updates. No Softaculous licence required. BSD-3-Clause.
 bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/install.sh)
 ```
 
-## What the account holder gets — cPanel → Software → **Install Tiger**
+## What the account holder gets — cPanel left menu → **Tiger Management**
 
 - **Your Tigers** — every Tiger in the account, whoever installed it (this plugin, the web installer,
   Composer), with version, live state and an Admin link.
@@ -22,7 +22,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/inst
 - Installing beside an existing site is the ordinary case (a subdomain of a WordPress account, say);
   the existing site and its `.htaccess` are never touched.
 
-## What the host gets — WHM → Plugins → **Tiger**
+## What the host gets — WHM → Plugins → **Tiger Management**
 
 - **Fleet** — every Tiger under `/home`, joined to WHM's account and vhost table: account, domain,
   app root, PHP, version, live state, and whether a newer tiger-core exists (`3 of 12 need an update`).

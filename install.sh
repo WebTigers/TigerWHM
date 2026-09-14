@@ -81,8 +81,14 @@ theme_root="/usr/local/cpanel/base/frontend/jupiter"
 mkdir -p "$theme_root/tiger"
 cp -a "$HOME_DIR/cpanel/tiger/." "$theme_root/tiger/"
 chmod 755 "$theme_root/tiger"; chmod 644 "$theme_root/tiger/"*
-# install_plugin wants a tarball with install.json + the icon at its top level.
-( cd "$HOME_DIR/cpanel" && tar -czf "$work/tigerwhm-cpanel.tar.gz" install.json tiger.png )
+# The LEFT-MENU entry: cPanel's MenuBuilder scans /var/cpanel/plugins/*/menu/LeftMenu.yaml and
+# install_plugin rebuilds the menu cache when the tarball carries a menu/ dir — so our copy must be
+# in place BEFORE install_plugin runs. (install_plugin itself does not copy plugin dirs there.)
+mkdir -p /var/cpanel/plugins/tigerwhm
+cp -a "$HOME_DIR/cpanel/install.json" "$HOME_DIR/cpanel/tiger.png" "$HOME_DIR/cpanel/menu" /var/cpanel/plugins/tigerwhm/
+chmod -R a+rX /var/cpanel/plugins/tigerwhm
+# install_plugin wants a tarball with install.json + the icon (+ menu/) at its top level.
+( cd "$HOME_DIR/cpanel" && tar -czf "$work/tigerwhm-cpanel.tar.gz" install.json tiger.png menu )
 /usr/local/cpanel/scripts/install_plugin "$work/tigerwhm-cpanel.tar.gz" --theme jupiter
 
 # ---- 5. WHM side (the host's page) -------------------------------------------------------------
@@ -97,5 +103,5 @@ cp "$HOME_DIR/whm/tiger.png" /usr/local/cpanel/whostmgr/docroot/addon_plugins/ti
 echo
 echo "TigerWHM $ver installed."
 echo "  WHM    → Plugins → Tiger"
-echo "  cPanel → Software → Install Tiger   (every account, Jupiter theme)"
+echo "  cPanel → left menu → Tiger Management   (every account, Jupiter theme)"
 echo "  Host defaults: /etc/tigerwhm/config.json"

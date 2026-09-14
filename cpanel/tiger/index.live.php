@@ -79,7 +79,7 @@ $mine = $phpNew ? (new TigerWHM_Engine($phpNew))->discover($home, true) : ['inst
 $byDocroot = [];
 foreach ((array) ($mine['installs'] ?? []) as $i) { if (!empty($i['docroot'])) { $byDocroot[rtrim($i['docroot'], '/')] = $i; } }
 
-print $cpanel->header('Install Tiger');
+print $cpanel->header('Tiger Management');
 ?>
 <style>
 .tg-wrap{max-width:960px}.tg-brand{color:#6c757d;margin-bottom:1rem}.tg-card{background:#fff;border:1px solid #dee2e6;border-radius:.375rem;padding:1.25rem;margin-bottom:1.25rem}

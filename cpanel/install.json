@@ -1,7 +1,7 @@
 [
     {
         "id": "tigerwhm-install",
-        "name": "Install Tiger",
+        "name": "Tiger Management",
         "type": "link",
         "group_id": "software",
         "order": "2",
@@ -10,7 +10,7 @@
         "feature": "tigerwhm",
         "featuremanager": true,
         "if": "$HASROLE{'WebServer'}",
-        "description": "Install the Tiger platform on a domain or subdomain in one click, and see the Tigers already in this account.",
-        "search_text": "tiger install cms saas website platform webtigers"
+        "description": "Install and manage Tiger sites on your domains and subdomains.",
+        "search_text": "tiger management install cms saas website platform webtigers"
     }
 ]

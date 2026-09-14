@@ -66,7 +66,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:.4rem .5rem;border-botto
 .btn{padding:.35rem .8rem;border:1px solid #0d6efd;background:#0d6efd;color:#fff;border-radius:.25rem;cursor:pointer}.btn.sec{background:#fff;color:#0d6efd}
 code{background:#f1f3f5;padding:0 .25rem;border-radius:.2rem}
 </style></head><body>
-<div class="card"><h1>Tiger</h1><span class="muted">TigerWHM <?= $e($version) ?> · engine tiger-headless <?= $e($engineV) ?> · every cPanel account on this server can install Tiger from cPanel → Software → Install Tiger.</span></div>
+<div class="card"><h1>Tiger</h1><span class="muted">TigerWHM <?= $e($version) ?> · engine tiger-headless <?= $e($engineV) ?> · every cPanel account on this server has a <b>Tiger Management</b> item in its cPanel left menu.</span></div>
 
 <?php foreach ($notice as $n): ?><div class="card ok"><?= $e($n) ?></div><?php endforeach; ?>
 <?php foreach ($errors as $n): ?><div class="card bad"><?= $e($n) ?></div><?php endforeach; ?>
