@@ -12,7 +12,7 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
   (engine 0.6.0).
 - **Everything offered comes live from a public repo.** Themes and modules from the Directory feed
   (as before); what is featured and the skill packs from
-  `WebTigers/TigerVendors/install/catalog.json` (`TigerWHM_Catalog`, cached hourly, bundled snapshot
+  its own public repo, `WebTigers/TigerCatalog` (`TigerWHM_Catalog`, cached hourly, bundled snapshot
   as the last resort). Add, remove or re-group and every new install on every host sees it — no plugin
   update. Host defaults default to "follow the catalog" per row, with an override.
 - **Admin signs you in.** The list's Admin button mints a one-time, 2-minute sign-in link for the

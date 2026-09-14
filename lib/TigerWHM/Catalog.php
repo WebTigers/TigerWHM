@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2026 WebTigers. Tiger™ and WebTigers™ are trademarks of WebTigers.
  *
- * The out-of-the-gate offer — read LIVE from the public Directory repo (TigerVendors/install/catalog.json)
+ * The out-of-the-gate offer — read LIVE from its own public repo (WebTigers/TigerCatalog, catalog.json)
  * so adding a skill pack or changing what is featured reaches every new install with no plugin update
  * on any host. Themes and modules come from the Directory feed (TigerWHM_Directory); this file curates
  * what is pre-selected and defines the skill packs. Cached per user; a bundled snapshot is the last
@@ -11,7 +11,7 @@
  */
 class TigerWHM_Catalog
 {
-    const URL       = 'https://raw.githubusercontent.com/WebTigers/TigerVendors/main/install/catalog.json';
+    const URL       = 'https://raw.githubusercontent.com/WebTigers/TigerCatalog/main/catalog.json';
     const CACHE_TTL = 3600;
     const SNAPSHOT  = __DIR__ . '/../../cpanel/catalog.snapshot.json';
 
