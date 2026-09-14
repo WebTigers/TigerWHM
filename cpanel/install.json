@@ -1,0 +1,16 @@
+[
+    {
+        "id": "tigerwhm-install",
+        "name": "Install Tiger",
+        "type": "link",
+        "group_id": "software",
+        "order": "2",
+        "uri": "tiger/index.live.php",
+        "icon": "tiger.png",
+        "feature": "tigerwhm",
+        "featuremanager": true,
+        "if": "$HASROLE{'WebServer'}",
+        "description": "Install the Tiger platform on a domain or subdomain in one click, and see the Tigers already in this account.",
+        "search_text": "tiger install cms saas website platform webtigers"
+    }
+]
