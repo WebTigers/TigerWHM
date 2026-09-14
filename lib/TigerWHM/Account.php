@@ -102,6 +102,36 @@ class TigerWHM_Account
         return $names;
     }
 
+    /**
+     * Apply the user's optional database overrides (name / user / password) to the generated names,
+     * inside cPanel's rules: the prefix is fixed, the rest is [a-z0-9_], lengths capped. Blank = keep
+     * the generated value (WP Toolkit's "random values are generated if fields are left blank").
+     *
+     * @throws InvalidArgumentException naming the field
+     */
+    public function dbOverrides(array $names, array $form)
+    {
+        $r = $this->_api->uapi('Mysql', 'get_restrictions', []);
+        $prefix = (string) ($r['prefix'] ?? ($this->_user . '_'));
+        $maxDb  = (int) ($r['max_database_name_length'] ?? 64);
+        $maxUsr = (int) ($r['max_username_length'] ?? 32);
+        foreach (['db_name' => ['name', $maxDb], 'db_user' => ['user', $maxUsr]] as $field => [$key, $max]) {
+            $v = strtolower(trim((string) ($form[$field] ?? '')));
+            if ($v === '') { continue; }
+            if (strpos($v, $prefix) === 0) { $v = substr($v, strlen($prefix)); }
+            if (!preg_match('/^[a-z0-9_]+$/', $v)) { throw new InvalidArgumentException("Database {$key}: letters, digits and underscores only."); }
+            if (strlen($prefix . $v) > $max)   { throw new InvalidArgumentException("Database {$key}: at most {$max} characters including the {$prefix} prefix."); }
+            $names[$key] = $prefix . $v;
+        }
+        $pw = (string) ($form['db_password'] ?? '');
+        if ($pw !== '') {
+            if (strlen($pw) < 12)                { throw new InvalidArgumentException('Database password: at least 12 characters.'); }
+            if (preg_match('/["\'\\\\]|\s/', $pw)) { throw new InvalidArgumentException('Database password: no quotes, backslashes or spaces.'); }
+            $names['password'] = $pw;
+        }
+        return $names;
+    }
+
     /** A DB password with no `"` (the installer writes INI) and no shell-hostile characters. */
     public static function password($len = 24)
     {

@@ -55,6 +55,18 @@ final class AccountTest extends TestCase
         $this->assertSame('cpuser_tgapp', $this->acct()->dbNamesFor('app.example.com')['name']);
     }
 
+    public function testDatabaseOverridesKeepThePrefixAndValidate(): void
+    {
+        $a = $this->acct(); $base = ['name' => 'cpuser_tgapp', 'user' => 'cpuser_tgapp', 'password' => 'GeneratedPw123456'];
+        $this->assertSame($base, $a->dbOverrides($base, []), 'blank = generated');
+        $o = $a->dbOverrides($base, ['db_name' => 'shop', 'db_user' => 'cpuser_shopper', 'db_password' => 'MyOwnPassword99']);
+        $this->assertSame(['name' => 'cpuser_shop', 'user' => 'cpuser_shopper', 'password' => 'MyOwnPassword99'], $o);
+        foreach ([['db_name' => 'bad-name'], ['db_user' => str_repeat('x', 40)], ['db_password' => 'short'], ['db_password' => 'has"quote12345']] as $bad) {
+            try { $a->dbOverrides($base, $bad); $this->fail(json_encode($bad) . ' should be refused'); }
+            catch (InvalidArgumentException $e) { $this->assertNotEmpty($e->getMessage()); }
+        }
+    }
+
     public function testProvisionMakesTheThreeUapiCallsInOrder(): void
     {
         $api = $this->api(); $a = $this->acct($api);

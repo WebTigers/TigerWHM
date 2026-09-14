@@ -6,6 +6,12 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ### Changed
 
+- **The account page follows the WP Toolkit shape:** toolbar (Install / Rescan / Help), the list of
+  installs as the page (or an empty state), and Install as a slide-over flyout with grouped sections
+  (General · Tiger Administrator · Database · AI agent), a label/field grid, Generate + show/hide on
+  passwords, "random values are generated if left blank" (a generated admin password is shown once on
+  the result), an editable Database section (name/user/password inside cPanel's prefix rules), and
+  Install/Cancel pinned to the bottom. `?open=1` deep-links to the flyout.
 - The account-side entry is a **top-level cPanel left-menu item, "Tiger Management"** (`menu/LeftMenu.yaml`, order 15), not an icon in the Software grid. WHM label matches.
 
 ## [0.1.0] — 2026-09-14
