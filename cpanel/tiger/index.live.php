@@ -84,7 +84,7 @@ print $cpanel->header('Install Tiger');
 <style>
 .tg-wrap{max-width:960px}.tg-brand{color:#6c757d;margin-bottom:1rem}.tg-card{background:#fff;border:1px solid #dee2e6;border-radius:.375rem;padding:1.25rem;margin-bottom:1.25rem}
 .tg-ok{color:#198754}.tg-bad{color:#dc3545}.tg-muted{color:#6c757d}.tg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.5rem 1rem}
-.tg-steps li{margin:.15rem 0}.tg-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}.tg-row>label{min-width:220px}
+.tg-steps li{margin:.15rem 0}.tg-nowrap{white-space:nowrap}.tg-row{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}.tg-row>label{min-width:220px}
 table.tg{width:100%;border-collapse:collapse}table.tg th,table.tg td{padding:.4rem .5rem;border-bottom:1px solid #eee;text-align:left}
 </style>
 <div class="tg-wrap">
@@ -148,7 +148,7 @@ table.tg{width:100%;border-collapse:collapse}table.tg th,table.tg td{padding:.4r
           <option value="<?= $e($d['domain']) ?>" <?= (!$d['php_ok'] || $has) ? 'disabled' : '' ?>><?= $e($d['domain']) ?> (<?= $e($d['kind']) ?>, <?= $e($d['php']) ?>)<?= $has ? ' — Tiger already here' : (!$d['php_ok'] ? ' — PHP too old' : '') ?></option>
         <?php endforeach; ?>
       </select>
-      <span class="tg-muted">or a new subdomain:</span> <input name="new_sub" placeholder="app" size="12"><?php if ($domains): ?><span class="tg-muted">.<?= $e($domains[0]['domain']) ?></span><?php endif; ?>
+      <span class="tg-nowrap"><span class="tg-muted">or a new subdomain:</span> <input name="new_sub" placeholder="app" size="12"><?php if ($domains): ?><span class="tg-muted">.<?= $e($domains[0]['domain']) ?></span><?php endif; ?></span>
     </div>
     <div class="tg-row"><label>Site name</label><input name="site_name" placeholder="My Site" size="30"></div>
     <div class="tg-row"><label>Admin email</label><input name="email" type="email" required size="30"></div>
