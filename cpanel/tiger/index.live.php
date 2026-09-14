@@ -231,7 +231,7 @@ print $cpanel->header('Tiger Management');
       <?php elseif ($which === 'cards'): ?>
     <div class="tg-cards">
       <div><p class="tg-kicker">BUILD A WEBSITE</p><h3>Just describe it.</h3><p>Tell your AI about your business and it builds the pages, navigation, content and forms you need.</p><a href="<?= $site ?>/cms" target="_blank" rel="noopener">Learn more →</a></div>
-      <div><p class="tg-kicker">SELL SOMETHING</p><h3>The business pieces are already here.</h3><p>Payments, stores, memberships, downloads and subscriptions come as Tiger modules.</p><a href="<?= $site ?>/marketplace" target="_blank" rel="noopener">Explore modules →</a></div>
+      <div><p class="tg-kicker">SELL SOMETHING</p><h3>The business pieces are already here.</h3><p>Payments, stores, memberships, downloads and subscriptions come as Tiger modules.</p><a href="<?= $site ?>/how-it-works" target="_blank" rel="noopener">See how it works →</a></div>
       <div><p class="tg-kicker">BUILD AN APP</p><h3>Go beyond websites.</h3><p>Tiger is a structured, extensible application platform. Your AI builds custom workflows without starting from scratch — and the site you start with never has to be replaced.</p><a href="<?= $site ?>/vibe" target="_blank" rel="noopener">See what's possible →</a></div>
     </div>
       <?php elseif ($which === 'compare'): ?>
