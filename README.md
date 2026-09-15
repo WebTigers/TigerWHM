@@ -21,10 +21,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/inst
   URL, or exactly which step stopped and why (submit again and it resumes from that step).
 - **Skills** — packs of Agent Skills (Web design, Content & publishing, Development, Documents & files)
   installed as a set; add or remove any later from Tiger's own Skills screen.
-- **The lists are live.** Themes and modules come from the [Directory](https://github.com/WebTigers/TigerVendors)
-  feed; what's featured and the skill packs from
-  [TigerCatalog](https://github.com/WebTigers/TigerCatalog) (`catalog.json`, its own repo).
-  Change either on `main` and every new install everywhere sees it — no host updates anything.
 - Installing beside an existing site is the ordinary case (a subdomain of a WordPress account, say);
   the existing site and its `.htaccess` are never touched.
 
