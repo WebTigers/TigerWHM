@@ -14,7 +14,8 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ### Changed
 
-- The menu item and page are **"Tiger AI Site Management"** (cPanel left menu, page title, WHM plugin label).
+- The menu item and page are **"Tiger AI Site Management"** (cPanel left menu, page title, WHM plugin label),
+  and it is the **first item under Tools** (`order: 5`, above Sitejet / WordPress Management).
 
 ### Fixed
 
@@ -51,7 +52,7 @@ The WP Toolkit shape, sign-in from the list, skill packs, and a live catalog. En
   passwords, "random values are generated if left blank" (a generated admin password is shown once on
   the result), an editable Database section (name/user/password inside cPanel's prefix rules), and
   Install/Cancel pinned to the bottom. `?open=1` deep-links to the flyout.
-- The account-side entry is a **top-level cPanel left-menu item, "Tiger Management"** (`menu/LeftMenu.yaml`, order 15), not an icon in the Software grid. WHM label matches.
+- The account-side entry is a **top-level cPanel left-menu item, "Tiger Management"** (`menu/LeftMenu.yaml`, order 5 — first under Tools), not an icon in the Software grid. WHM label matches.
 
 ## [0.1.0] — 2026-09-14
 
