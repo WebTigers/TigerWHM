@@ -150,7 +150,19 @@ final class FleetAndEngineTest extends TestCase
         $j = TigerWHM_Catalog::normalize(['skill_packs' => [['id' => 'Bad Id', 'skills' => [['repo' => 'x', 'path' => 'y']]], ['id' => 'ok', 'skills' => [['repo' => 'a/b', 'path' => '../x'], ['repo' => 'a/b', 'path' => 'good']]]]]);
         $this->assertSame(['ok'], array_column($j['skill_packs'], 'id'));
         $this->assertCount(1, $j['skill_packs'][0]['skills']);
-        $this->assertSame(['featured' => ['theme' => '', 'modules' => []], 'skill_packs' => []], TigerWHM_Catalog::normalize('garbage'));
+        $this->assertSame(['featured' => ['theme' => '', 'modules' => []], 'skill_packs' => [], 'intro' => null], TigerWHM_Catalog::normalize('garbage'));
+        // The page copy: plain text, https only; a bad card is dropped, a bad hero drops the whole intro.
+        $this->assertSame('Build a website by talking to AI.', $c['intro']['hero']['title']);
+        $this->assertCount(3, $c['intro']['cards']);
+        $this->assertSame('https://webtigers.com/shop', $c['intro']['cards'][1]['link_url']);
+        $hero = ['title' => 'T', 'text' => 'x', 'link_label' => 'l', 'link_url' => 'https://webtigers.com'];
+        $i = TigerWHM_Catalog::normalize(['intro' => ['hero' => $hero + ['title' => '<b>T</b>'], 'cards' => [
+            ['kicker' => 'k', 'title' => 't', 'text' => 'x', 'link_label' => 'l', 'link_url' => 'javascript:alert(1)'],
+            ['kicker' => 'k', 'title' => 't', 'text' => 'x', 'link_label' => 'l', 'link_url' => 'https://webtigers.com/cms'],
+        ]]])['intro'];
+        $this->assertSame('T', $i['hero']['title'], 'tags stripped');
+        $this->assertCount(1, $i['cards'], 'the javascript: card is gone');
+        $this->assertNull(TigerWHM_Catalog::normalize(['intro' => ['hero' => ['title' => 'no text'], 'cards' => []]])['intro']);
     }
 
     public function testHostDefaultsFollowTheCatalogUnlessOverridden(): void

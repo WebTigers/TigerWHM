@@ -15,7 +15,7 @@ class TigerWHM_Catalog
     const CACHE_TTL = 3600;
     const SNAPSHOT  = __DIR__ . '/../../cpanel/catalog.snapshot.json';
 
-    /** @return array{featured:array{theme:string,modules:array},skill_packs:array,live:bool} */
+    /** @return array{featured:array{theme:string,modules:array},skill_packs:array,intro:array|null,live:bool} */
     public static function load($cacheDir = null)
     {
         $json = null; $live = false;
@@ -41,8 +41,9 @@ class TigerWHM_Catalog
     /** Pure: shape-check the document so a typo upstream degrades to "no packs", never a fatal page. */
     public static function normalize($doc)
     {
-        $out = ['featured' => ['theme' => '', 'modules' => []], 'skill_packs' => []];
+        $out = ['featured' => ['theme' => '', 'modules' => []], 'skill_packs' => [], 'intro' => null];
         if (!is_array($doc)) { return $out; }
+        $out['intro'] = self::_intro($doc['intro'] ?? null);
         $slug = static function ($v) { $v = strtolower(trim((string) $v)); return preg_match('/^[a-z0-9][a-z0-9_-]*$/', $v) ? $v : ''; };
         $f = is_array($doc['featured'] ?? null) ? $doc['featured'] : [];
         $out['featured']['theme']   = $slug($f['theme'] ?? '');
@@ -65,6 +66,33 @@ class TigerWHM_Catalog
             ];
         }
         return $out;
+    }
+
+    /**
+     * The page copy (hero + cards): plain text only, https links only, capped lengths. Anything off-shape
+     * is dropped — a bad card disappears, a bad hero means no intro at all — never a broken page.
+     * @return array{hero:array,cards:array}|null
+     */
+    protected static function _intro($in)
+    {
+        if (!is_array($in)) { return null; }
+        $txt = static function ($v, $max) { $v = trim(preg_replace('/\s+/', ' ', strip_tags((string) $v))); return $v === '' || strlen($v) > $max ? null : $v; };
+        $url = static function ($v) { $v = trim((string) $v); return preg_match('#^https://[^\s"\'<>]+$#', $v) ? $v : null; };
+        $block = static function ($o, array $lens) use ($txt, $url) {
+            if (!is_array($o)) { return null; }
+            $out = [];
+            foreach ($lens as $k => $max) { if (($out[$k] = $txt($o[$k] ?? '', $max)) === null) { return null; } }
+            if (($out['link_url'] = $url($o['link_url'] ?? '')) === null) { return null; }
+            return $out;
+        };
+        $hero = $block($in['hero'] ?? null, ['title' => 80, 'text' => 400, 'link_label' => 40]);
+        if ($hero === null) { return null; }
+        $cards = [];
+        foreach ((is_array($in['cards'] ?? null) ? $in['cards'] : []) as $c) {
+            $b = $block($c, ['kicker' => 30, 'title' => 60, 'text' => 220, 'link_label' => 40]);
+            if ($b !== null && count($cards) < 4) { $cards[] = $b; }
+        }
+        return ['hero' => $hero, 'cards' => $cards];
     }
 
     /** Expand chosen pack ids into the flat, deduplicated `skills` list the engine takes. */

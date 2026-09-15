@@ -1,10 +1,41 @@
 {
   "schema": 1,
-  "about": "What a fresh Tiger install is offered out of the gate. Read LIVE by installer front-ends (TigerWHM today); edit this file on main and every new install sees it — no host updates anything. Themes and modules themselves come from the Directory (WebTigers/TigerVendors data/index.json); this file decides what is featured and defines the skill packs.",
+  "about": "What a fresh Tiger install is offered out of the gate. Read LIVE by installer front-ends (TigerWHM today); edit this file on main and every new install sees it — no host updates anything. Themes and modules themselves come from the Directory (WebTigers/TigerVendors data/index.json); this file decides what is featured and defines the skill packs. The `intro` block is the copy the installer page shows above/below the site list (hero + discovery cards).",
   "featured": {
     "theme": "theme-grey-mist",
     "modules": [
       "docs"
+    ]
+  },
+  "intro": {
+    "hero": {
+      "title": "Build a website by talking to AI.",
+      "text": "Tiger is an AI-native website and application platform. Tell your AI what you want — a business site, a store, a membership site, a blog, a custom app — and build it without learning themes, plugins or page builders.",
+      "link_label": "See what Tiger can build",
+      "link_url": "https://webtigers.com"
+    },
+    "cards": [
+      {
+        "kicker": "Build a website",
+        "title": "Just describe it.",
+        "text": "Tell your AI about your business and it builds the pages, navigation, content and forms you need.",
+        "link_label": "Learn more",
+        "link_url": "https://webtigers.com/cms"
+      },
+      {
+        "kicker": "Sell something",
+        "title": "The business pieces are already here.",
+        "text": "Payments, stores, memberships, downloads and subscriptions come as Tiger modules.",
+        "link_label": "Explore TigerShop",
+        "link_url": "https://webtigers.com/shop"
+      },
+      {
+        "kicker": "Build an app",
+        "title": "Go beyond websites.",
+        "text": "Tiger is a structured, extensible application platform. Your AI builds custom workflows without starting from scratch — and the site you start with never has to be replaced.",
+        "link_label": "See what's possible",
+        "link_url": "https://webtigers.com/vibe"
+      }
     ]
   },
   "skill_packs": [

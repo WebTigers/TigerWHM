@@ -6,11 +6,10 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
 
 ### Added
 
-- **The page explains what Tiger is.** A cPanel user opened this because it was in the menu; the page now
-  says why they should care — a hero ("Build a website by talking to AI."), a traditional-vs-Tiger
-  comparison, and three cards (build a website · sell something · build an app) linking to webtigers.com; the sell card
-  points at TigerShop (/shop). The "sell" card
-  points at how-it-works until a TigerShop page exists (the Marketplace is a collection of shops, not TigerShop).
+- **The page explains what Tiger is — and the copy comes from the catalog.** A hero ("Build a website by
+  talking to AI.") and discovery cards (build a website · sell something · build an app), read from
+  `WebTigers/TigerCatalog` `intro` like the skill packs are: marketing edits one file, every host's page
+  follows, no plugin update. Plain text + https links only; off-shape copy is dropped, never rendered.
   With sites installed the list stays on top; with none, the intro is the page (replaces the empty state).
 
 ### Changed
