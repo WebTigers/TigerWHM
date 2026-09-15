@@ -13,6 +13,10 @@ All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://k
   points at how-it-works until a TigerShop page exists (the Marketplace is a collection of shops, not TigerShop).
   With sites installed the list stays on top; with none, the intro is the page (replaces the empty state).
 
+### Changed
+
+- The menu item and page are **"Tiger AI Site Management"** (cPanel left menu, page title, WHM plugin label).
+
 ### Fixed
 
 - The result card's Steps disclosure shows a chevron and a count instead of a bare heading.

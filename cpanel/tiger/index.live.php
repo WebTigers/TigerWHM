@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2026 WebTigers. Tiger™ and WebTigers™ are trademarks of WebTigers.
  *
- * TigerWHM — the cPanel page ("Tiger Management"). Runs as the ACCOUNT USER under cPanel's LivePHP.
+ * TigerWHM — the cPanel page ("Tiger AI Site Management"). Runs as the ACCOUNT USER under cPanel's LivePHP.
  *
  * Shape (the same one WP Toolkit trained everyone on): a title + toolbar, the list of installs AS the
  * page (or an empty state), and Install as a slide-over flyout with grouped sections, a label/field
@@ -112,7 +112,7 @@ $mainDomain = $domains[0]['domain'] ?? '';
 $prefix = $user . '_';
 try { $prefix = (string) ($api->uapi('Mysql', 'get_restrictions', [])['prefix'] ?? $prefix); } catch (Throwable $ex) { /* keep the guess */ }
 
-print $cpanel->header('Tiger Management');
+print $cpanel->header('Tiger AI Site Management');
 ?>
 <style>
 /* Page */

@@ -103,5 +103,5 @@ cp "$HOME_DIR/whm/tiger.png" /usr/local/cpanel/whostmgr/docroot/addon_plugins/ti
 echo
 echo "TigerWHM $ver installed."
 echo "  WHM    → Plugins → Tiger"
-echo "  cPanel → left menu → Tiger Management   (every account, Jupiter theme)"
+echo "  cPanel → left menu → Tiger AI Site Management   (every account, Jupiter theme)"
 echo "  Host defaults: /etc/tigerwhm/config.json"
