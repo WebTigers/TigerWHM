@@ -66,10 +66,11 @@ final class FleetAndEngineTest extends TestCase
     public function testUpgradeRunsAsTheAccountUserUnderItsPhp(): void
     {
         $f = new TigerWHM_Fleet(TigerWHM_Config::defaults(), $this->whm(), '/opt/cpanel/ea-php83/root/usr/bin/php');
-        $row = ['app_root' => '/home/alice/app.alice.com/tiger-app', 'account' => 'alice', 'php_bin' => '/opt/cpanel/ea-php81/root/usr/bin/php'];
+        $row = ['app_root' => '/home/alice/app.alice.com/tiger-app', 'docroot' => '/home/alice/public_html/app', 'account' => 'alice', 'php_bin' => '/opt/cpanel/ea-php81/root/usr/bin/php'];
         $u = $f->upgrade($row);
         $this->assertTrue($u['ok']);
         $cmd = end($this->cmds)[0];
+        $this->assertStringContainsString("--docroot=/home/alice/public_html/app", $cmd, 'the docroot travels so the engine can keep its .htaccess current');
         $this->assertStringStartsWith("su -s /bin/sh 'alice' -c ", $cmd);
         $this->assertStringContainsString('ea-php81/root/usr/bin/php', $cmd);
         $this->assertStringContainsString("upgrade", $cmd);

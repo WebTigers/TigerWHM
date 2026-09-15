@@ -2,6 +2,15 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
+## [1.0.2] — 2026-09-15
+
+### Changed
+
+- Engine **tiger-headless 1.2.0**: fleet updates pass each site's docroot so the engine brings its
+  `.htaccess` up to date — the Authorization pass-through that Bearer tokens (`/api`, `/mcp`) need
+  on PHP-FPM hosts (tiger-core 1.8.1 / skeleton 1.0.21, TIGER-138). Runs even when the core is
+  already current, so a fleet update is the one-click fix for every existing site.
+
 ## [1.0.1] — 2026-09-15
 
 Installer hardening from Sol AI's static review (TIGER-137: 132–136), each proven on host3 or by

@@ -90,7 +90,8 @@ class TigerWHM_Fleet
             return ['ok' => false, 'error' => ['step' => 'php', 'message' => 'This site is served by ' . ($row['php'] ?: 'an unknown PHP') . ', below the host minimum ' . ($this->_cfg['min_php'] ?? 'ea-php81') . '. Set the vhost\'s PHP in MultiPHP Manager first; the update then runs under that exact binary.']];
         }
         if ($user === '' || $user === 'root') { return ['ok' => false, 'error' => ['step' => 'account', 'message' => 'Cannot determine the account that owns ' . $row['app_root']]]; }
-        return (new TigerWHM_Engine($php, $user))->upgrade((string) $row['app_root'], $version);
+        // The docroot travels too: the engine keeps its .htaccess current (Authorization pass-through).
+        return (new TigerWHM_Engine($php, $user))->upgrade((string) $row['app_root'], $version, (string) ($row['docroot'] ?? ''));
     }
 
     /** Accounts whose main domain runs a PHP below the host minimum — the requirements gate, fleet-wide. */
