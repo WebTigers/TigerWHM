@@ -27,7 +27,7 @@ $nonce  = TigerWHM_Http::nonce($nonceF);
 $e      = ['TigerWHM_Http', 'e'];
 $phpNew = TigerWHM_Engine::newestPhp($cfg['min_php']);
 
-$result = null; $problems = []; $form = []; $openFlyout = $req->g('open') !== '';
+$result = null; $problems = []; $form = []; $catalog = null; $openFlyout = $req->g('open') !== '';
 
 // ---------------------------------------------------------------------------------------- act
 if ($req->method === 'POST' && $req->p('action') === 'install') {
@@ -40,7 +40,8 @@ if ($req->method === 'POST' && $req->p('action') === 'install') {
         'password_generated' => $req->p('password_generated') === '1',
         'packs' => array_values(array_filter(array_map('strval', (array) $req->p('packs', [])))),
     ];
-    $form['skills'] = TigerWHM_Catalog::skillsFor(TigerWHM_Catalog::load($home . '/.tigerwhm'), $form['packs']);
+    $catalog = TigerWHM_Catalog::load($home . '/.tigerwhm', $cfg);
+    $form['skills'] = TigerWHM_Catalog::skillsFor($catalog, $form['packs']);
     if (!TigerWHM_Http::nonceOk($nonceF, $req->p('nonce'))) {
         $problems[] = 'The form expired — please try again.';
     } else {
@@ -50,25 +51,44 @@ if ($req->method === 'POST' && $req->p('action') === 'install') {
                 $domains = $acct->domains();
                 $byName  = array_column($domains, null, 'domain');
                 if ($form['new_sub'] !== '') {
+                    // Idempotent: a retry after a failed install finds the subdomain already there.
                     $fqdn = $acct->addSubdomain($form['new_sub'], $domains[0]['domain']);
                     $domains = $acct->domains(); $byName = array_column($domains, null, 'domain');
-                    $form['domain'] = $fqdn;
+                    $form['domain'] = $fqdn; $form['new_sub'] = '';
                 }
                 $domain = $byName[$form['domain']] ?? null;
                 if (!$domain) { throw new RuntimeException('That domain is not on this account.'); }
-                $php = TigerWHM_Engine::phpFor($domain['php'], $cfg['min_php']) ?: $phpNew;
-                if (!$php) { throw new RuntimeException('This domain runs ' . $domain['php'] . '; Tiger needs ' . $cfg['min_php'] . ' or newer. Change it in MultiPHP Manager and try again.'); }
+                // The vhost's OWN PHP, never a fallback: an install that only runs under a CLI the web
+                // server does not use is a site that does not load.
+                $php = TigerWHM_Engine::phpFor($domain['php'], $cfg['min_php']);
+                if (!$php) { throw new RuntimeException('This domain runs ' . ($domain['php'] ?: 'an unknown PHP') . '; Tiger needs ' . $cfg['min_php'] . ' or newer. Change it in MultiPHP Manager and try again.'); }
 
-                $engine = new TigerWHM_Engine($php);
-                $db     = $acct->dbOverrides($acct->dbNamesFor($domain['domain']), $form);
-                // Database first: the engine's requirements gate proves the connection, so it needs real
-                // credentials. If the gate then fails, what's left behind is one empty database the user
-                // can drop from MySQL Databases — nothing was extracted or exposed.
-                $acct->provision($db);
-                $spec  = $acct->spec($form, $domain, $db);
+                $engine  = new TigerWHM_Engine($php);
+                $pending = TigerWHM_Pending::load($home, $domain['domain']);
+                $reused  = $pending !== null;
+                $db      = $reused ? $pending['db'] : $acct->dbOverrides($acct->dbNamesFor($domain['domain']), $form);
+                $spec    = $acct->spec($form, $domain, $db);
+                new Tiger_Headless_Spec($spec);   // the engine's own validation, BEFORE anything is created
+                if (!$reused) {
+                    // Database first: the engine's requirements gate proves the connection, so it needs real
+                    // credentials. Remembered per domain until the install succeeds, so a retry reuses them.
+                    $acct->provision($db);
+                    TigerWHM_Pending::save($home, $domain['domain'], $db, $spec['paths']['app_root']);
+                }
                 $check = $engine->check($spec);
-                if (empty($check['ok'])) { throw new RuntimeException('Requirements: ' . ($check['error']['message'] ?? 'unknown')); }
+                if (empty($check['ok'])) {
+                    // Nothing was extracted or written: a fresh database has nothing worth keeping.
+                    if (!$reused) { $left = $acct->rollback($db); TigerWHM_Pending::clear($home, $domain['domain']); }
+                    throw new RuntimeException('Requirements: ' . ($check['error']['message'] ?? 'unknown') . (!empty($left) ? ' (could not remove ' . implode(', ', $left) . ')' : ''));
+                }
                 $result = $engine->install($spec);
+                if (!empty($result['ok'])) {
+                    TigerWHM_Pending::clear($home, $domain['domain']);
+                    TigerWHM_Log::install($home, $domain['domain'], $spec, $result, $cfg, $catalog);
+                } elseif ($reused) {
+                    $result['reused_db'] = $db['name'];
+                }
+                if ($reused && !empty($result['ok'])) { $result['reused_db'] = $db['name']; }
             } catch (Throwable $ex) {
                 $problems[] = $ex->getMessage();
             }
@@ -98,8 +118,8 @@ if ($req->method === 'POST' && $req->p('action') === 'login') {
 // --------------------------------------------------------------------------------------- data
 $domains = [];
 try { $domains = $acct->domains(); } catch (Throwable $ex) { $problems[] = 'Could not read this account\'s domains: ' . $ex->getMessage(); }
-$feed = TigerWHM_Directory::installables($home . '/.tigerwhm');
-$catalog = TigerWHM_Catalog::load($home . '/.tigerwhm');
+$feed = TigerWHM_Directory::installables($home . '/.tigerwhm', $cfg);
+$catalog = $catalog ?? TigerWHM_Catalog::load($home . '/.tigerwhm', $cfg);
 $pre     = TigerWHM_Config::preselect($cfg, $catalog);
 $mine = $phpNew ? (new TigerWHM_Engine($phpNew))->discover($home, true) : ['installs' => [], 'summary' => []];
 $byDocroot = [];
@@ -191,7 +211,9 @@ print $cpanel->header('Tiger AI Site Management');
     <?php if (!empty($result['ok']) && empty($result['already_installed'])): ?>
       <div class="tg-card ok"><h3>Tiger is installed</h3>
         <p>Sign in at <a href="<?= $e($result['admin_url']) ?>" target="_blank"><?= $e($result['admin_url']) ?></a> as <strong><?= $e($result['login']['email'] ?? '') ?></strong><?php if (!empty($form['password_generated'])): ?> — generated password (shown once, copy it now): <code><?= $e($form['password']) ?></code><?php else: ?> with the password you chose.<?php endif; ?></p>
-        <?php if (!empty($result['skills']['installed'])): ?><p class="tg-muted"><?= count($result['skills']['installed']) ?> agent skills installed<?= !empty($result['skills']['failed']) ? '; could not fetch: ' . $e(implode(', ', $result['skills']['failed'])) : '' ?>.</p><?php endif; ?>
+        <?php if (!empty($result['reused_db'])): ?><p class="tg-muted">Reused the database from your earlier attempt (<code><?= $e($result['reused_db']) ?></code>).</p><?php endif; ?>
+        <?php if (!empty($result['skills']['installed'])): ?><p class="tg-muted"><?= count($result['skills']['installed']) ?> agent skills installed<?= !empty($result['skills']['failed']) ? '; could not fetch: ' . $e(implode(', ', $result['skills']['failed'])) : '' ?>.</p>
+        <?php if (!empty($result['skills']['sources'])): ?><details><summary class="tg-steps-sum tg-muted">Skill sources</summary><ul class="tg-steps"><?php foreach ($result['skills']['sources'] as $src): ?><li><code><?= $e($src['name']) ?></code> <span class="tg-muted">github.com/<?= $e($src['repo']) ?>/<?= $e($src['path']) ?> @ <?= $e($src['commit'] ? substr($src['commit'], 0, 12) : $src['ref'] . ' (branch; commit not resolved)') ?></span></li><?php endforeach; ?></ul></details><?php endif; ?><?php endif; ?>
         <?php if (!empty($result['agent']['token'])): ?><p><strong>AI agent credential</strong> (shown once — copy it now): <code><?= $e($result['agent']['token']) ?></code><br>Endpoint: <code><?= $e($result['agent']['endpoint']) ?></code></p><?php endif; ?>
         <details><summary class="tg-steps-sum tg-muted">Steps (<?= count((array) ($result['steps'] ?? [])) ?>)</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="tg-ok"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
       </div>
@@ -199,7 +221,7 @@ print $cpanel->header('Tiger AI Site Management');
       <div class="tg-card ok"><h3>Tiger was already installed there</h3><p>Version <?= $e($result['version']) ?>. Sign in at <a href="<?= $e($result['admin_url']) ?>" target="_blank"><?= $e($result['admin_url']) ?></a>.</p></div>
     <?php else: ?>
       <div class="tg-card bad"><h3>The install stopped at “<?= $e($result['error']['step'] ?? '?') ?>”</h3><p><?= $e($result['error']['message'] ?? '') ?></p>
-        <p class="tg-muted">Fix what it names and run Install again with the same domain — it resumes from that step. Nothing is web-reachable until every step passes.</p>
+        <p class="tg-muted">Fix what it names and run Install again with the same domain — it resumes from that step with the same database<?= !empty($result['reused_db']) ? ' (<code>' . $e($result['reused_db']) . '</code>)' : '' ?>. Nothing is web-reachable until every step passes.</p>
         <details><summary class="tg-steps-sum tg-muted">Steps (<?= count((array) ($result['steps'] ?? [])) ?>)</summary><ul class="tg-steps"><?php foreach ((array) ($result['steps'] ?? []) as $s): ?><li><code><?= $e($s['step']) ?></code> <span class="<?= $s['status'] === 'failed' ? 'tg-bad' : 'tg-ok' ?>"><?= $e($s['status']) ?></span> <span class="tg-muted"><?= $e($s['detail']) ?></span></li><?php endforeach; ?></ul></details>
       </div>
     <?php endif; ?>

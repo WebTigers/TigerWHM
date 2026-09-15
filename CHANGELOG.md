@@ -2,6 +2,42 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
+## [1.0.1] — 2026-09-15
+
+Installer hardening from Sol AI's static review (TIGER-137: 132–136), each proven on host3 or by
+tests that run the engine's real validators. Engine tiger-headless **0.6.2**.
+
+### Fixed
+
+- **Addon-domain app root** (TIGER-132): `<home>/<domain>/tiger-app` lands INSIDE the docroot when an
+  addon domain's document root is `<home>/<domain>`. `TigerWHM_Account::appRootFor()` now picks
+  `<home>/tiger-apps/<domain>` in that case; either way the result is outside the docroot. The
+  complete spec is validated by the engine's own `Tiger_Headless_Spec` before anything is created.
+- **Failed installs resume** (TIGER-133): provisioning was not idempotent — a retry died on "already
+  exists" before the engine could resume its ledger. Now: a subdomain the account already has is
+  reused, not re-created; the database + user created for an attempt are remembered per domain
+  (`~/.tigerwhm/pending/<domain>.json`, 0600) and reused on retry until the install succeeds; a
+  requirements refusal after provisioning rolls the database + user back. The failed form keeps the
+  created subdomain as the chosen domain. Surfaced an engine bug on the way: a failure after step 7
+  was adopted as "already installed" (engine 0.6.2 fixes it).
+- **PHP fails closed** (TIGER-134): no fallback to the newest CLI PHP. An install or update runs
+  under the vhost's OWN assigned PHP or not at all; below the minimum → refused, naming MultiPHP
+  Manager. The WHM fleet no longer offers such a site for update, and a direct POST is refused too.
+- **Panel renders never wait on GitHub** (TIGER-135): catalog + Directory fetches get a 5-second
+  budget each (connect ≥ 3 s) — a blackholed GitHub falls to the cached copy or bundled snapshot in
+  ≤ 10 s instead of ~4 minutes. Release downloads keep the engine's 120 s.
+- The WHM "Update selected" button no longer uses a browser `confirm()`.
+
+### Added
+
+- **Catalog trust mode** (TIGER-136): host defaults gain `catalog.mode` — `live` (default: read
+  `main` hourly) or `pinned` (read the catalog and the Directory at two named commits and nothing
+  else, until the host moves the pins). The WHM page states the effective mode and source.
+- **Install record**: every completed install appends a line to `~/.tigerwhm/installs.log` — core
+  version, theme, modules, each skill with the commit it was installed at, and the catalog/Directory
+  sources — and the result card lists the skill sources. Skills now install at their resolved
+  commit (engine 0.6.1), so a moving branch cannot change what a site got.
+
 ## [1.0.0] — 2026-09-15
 
 First stable release. The plugin every cPanel account gets: one-click Tiger installs, the fleet from WHM,

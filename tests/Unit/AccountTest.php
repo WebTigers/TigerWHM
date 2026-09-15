@@ -24,6 +24,7 @@ final class AccountTest extends TestCase
             ],
             'Mysql::get_restrictions' => ['prefix' => 'cpuser_', 'max_database_name_length' => 64, 'max_username_length' => 32],
             'Mysql::create_database' => null, 'Mysql::create_user' => null, 'Mysql::set_privileges_on_database' => null,
+            'Mysql::delete_user' => null, 'Mysql::delete_database' => null,
             'SubDomain::addsubdomain' => null,
         ]);
     }
@@ -124,5 +125,50 @@ final class AccountTest extends TestCase
         $api = TigerWHM_Cpanel::fake(['Mysql::create_database' => function () { throw new RuntimeException('Mysql::create_database failed: The database “cpuser_tgapp” already exists.'); }]);
         $this->expectExceptionMessage('already exists');
         $this->acct($api)->provision(['name' => 'cpuser_tgapp', 'user' => 'u', 'password' => 'p']);
+    }
+
+    /** TIGER-132: an addon domain whose docroot IS <home>/<domain> must not get its app inside the web tree. */
+    public function testAppRootIsAlwaysOutsideTheDocroot(): void
+    {
+        $a = $this->acct();
+        $this->assertSame('/home/cpuser/app.example.com/tiger-app', $a->appRootFor(['domain' => 'app.example.com', 'docroot' => '/home/cpuser/public_html/app']));
+        $this->assertSame('/home/cpuser/tiger-apps/other.net', $a->appRootFor(['domain' => 'other.net', 'docroot' => '/home/cpuser/other.net']), 'addon docroot at <home>/<domain>');
+        $this->assertSame('/home/cpuser/tiger-apps/other.net', $a->appRootFor(['domain' => 'other.net', 'docroot' => '/home/cpuser/other.net/tiger-app/public']), 'docroot inside the would-be app root');
+        // Every fixture shape yields a spec the engine accepts as above-docroot.
+        $db = ['name' => 'cpuser_tg', 'user' => 'cpuser_tg', 'password' => 'p'];
+        foreach ($a->domains() as $d) {
+            $spec = new Tiger_Headless_Spec($a->spec(['email' => 'o@example.com', 'password' => 'Correct-Horse-9x'], $d, $db));
+            $this->assertSame('above-docroot', $spec->get('layout'), $d['domain']);
+        }
+        $this->expectException(RuntimeException::class);
+        $a->appRootFor(['domain' => 'home.net', 'docroot' => '/home/cpuser']);
+    }
+
+    /** TIGER-133: a retried subdomain is found, not re-created; a refused gate rolls its database back. */
+    public function testRetryIsIdempotentAndRollbackRemovesWhatProvisionMade(): void
+    {
+        $api = $this->api(); $a = $this->acct($api);
+        $this->assertSame('app.example.com', $a->addSubdomain('app', 'example.com'), 'already on the account');
+        $this->assertNotContains('SubDomain::addsubdomain', array_map(fn ($c) => $c[0] . '::' . $c[1], $api->calls));
+        $left = $a->rollback(['name' => 'cpuser_tgapp', 'user' => 'cpuser_tgapp', 'password' => 'p']);
+        $this->assertSame([], $left);
+        $this->assertSame(['Mysql::delete_user', 'Mysql::delete_database'], array_map(fn ($c) => $c[0] . '::' . $c[1], array_slice($api->calls, -2)));
+        $api2 = TigerWHM_Cpanel::fake(['Mysql::delete_user' => null, 'Mysql::delete_database' => function () { throw new RuntimeException('nope'); }]);
+        $this->assertSame(['database cpuser_tgapp'], $this->acct($api2)->rollback(['name' => 'cpuser_tgapp', 'user' => 'u', 'password' => 'p']), 'what could not be removed is named, not thrown');
+    }
+
+    /** TIGER-133: the pending record survives a failed install and is gone after a successful one. */
+    public function testPendingRecordRoundTrips(): void
+    {
+        $home = sys_get_temp_dir() . '/tgw-pending-' . getmypid();
+        @mkdir($home, 0700, true);
+        $this->assertNull(TigerWHM_Pending::load($home, 'app.example.com'));
+        $db = ['name' => 'cpuser_tgapp', 'user' => 'cpuser_tgapp', 'password' => 'Secret123456'];
+        $this->assertTrue(TigerWHM_Pending::save($home, 'app.example.com', $db, '/home/cpuser/app.example.com/tiger-app'));
+        $this->assertSame('0600', substr(sprintf('%o', fileperms(TigerWHM_Pending::path($home, 'app.example.com'))), -4));
+        $this->assertSame($db, TigerWHM_Pending::load($home, 'App.Example.com')['db'], 'case-insensitive on the domain');
+        TigerWHM_Pending::clear($home, 'app.example.com');
+        $this->assertNull(TigerWHM_Pending::load($home, 'app.example.com'));
+        array_map('unlink', glob($home . '/.tigerwhm/pending/*') ?: []); @rmdir($home . '/.tigerwhm/pending'); @rmdir($home . '/.tigerwhm'); @rmdir($home);
     }
 }

@@ -24,6 +24,10 @@ class TigerWHM_Config
             'mail'        => ['transport' => '', 'host' => '', 'port' => 25],   // a relay the host runs; blank = the box's MTA
             'min_php'     => 'ea-php81',
             'allow_agent' => true,          // may an account tick "connect an AI agent" (the MCP handshake)?
+            // What the install form is allowed to trust. 'live' reads the catalog + Directory from `main` (an
+            // hour's cache): additions reach every host with no plugin update. 'pinned' reads both at the
+            // commits named here and nothing else — the host reviews, then moves the pin.
+            'catalog'     => ['mode' => 'live', 'catalog_ref' => '', 'directory_ref' => ''],
         ];
     }
 
@@ -57,7 +61,17 @@ class TigerWHM_Config
             ],
             'min_php'     => preg_match('/^ea-php\d{2,3}$/', (string) ($c['min_php'] ?? '')) ? (string) $c['min_php'] : $d['min_php'],
             'allow_agent' => !empty($c['allow_agent']),
+            'catalog'     => self::_catalog(is_array($c['catalog'] ?? null) ? $c['catalog'] : []),
         ];
+        return $out;
+    }
+
+    /** The trust block: pinned needs two 40-hex commits, otherwise it is live. */
+    protected static function _catalog(array $c)
+    {
+        $sha = static function ($v) { $v = strtolower(trim((string) $v)); return preg_match('/^[0-9a-f]{40}$/', $v) ? $v : ''; };
+        $out = ['mode' => 'live', 'catalog_ref' => $sha($c['catalog_ref'] ?? ''), 'directory_ref' => $sha($c['directory_ref'] ?? '')];
+        if (($c['mode'] ?? '') === 'pinned' && $out['catalog_ref'] !== '' && $out['directory_ref'] !== '') { $out['mode'] = 'pinned'; }
         return $out;
     }
 

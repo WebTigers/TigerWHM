@@ -74,10 +74,14 @@ final class FleetAndEngineTest extends TestCase
         $this->assertStringContainsString('ea-php81/root/usr/bin/php', $cmd);
         $this->assertStringContainsString("upgrade", $cmd);
         $this->assertStringContainsString("--app-root=/home/alice/app.alice.com/tiger-app", $cmd);
-        // Below-minimum PHP → falls back to the newest acceptable binary; never root.
-        $u2 = $f->upgrade(['app_root' => '/home/bob/tiger-app', 'account' => 'bob', 'php_bin' => null]);
-        $this->assertStringContainsString('ea-php83', end($this->cmds)[0]);
-        $u3 = $f->upgrade(['app_root' => '/x', 'account' => 'root', 'php_bin' => null]);
+        // Below-minimum PHP → REFUSED (TIGER-134): never a different binary than the one serving the site.
+        $n = count($this->cmds);
+        $u2 = $f->upgrade(['app_root' => '/home/bob/tiger-app', 'account' => 'bob', 'php' => 'ea-php74', 'php_bin' => null]);
+        $this->assertFalse($u2['ok']);
+        $this->assertSame('php', $u2['error']['step']);
+        $this->assertStringContainsString('MultiPHP Manager', $u2['error']['message']);
+        $this->assertCount($n, $this->cmds, 'nothing was run');
+        $u3 = $f->upgrade(['app_root' => '/x', 'account' => 'root', 'php_bin' => '/opt/cpanel/ea-php81/root/usr/bin/php']);
         $this->assertFalse($u3['ok']);
     }
 
@@ -200,5 +204,21 @@ final class FleetAndEngineTest extends TestCase
         $this->assertSame($n, TigerWHM_Http::nonce($f), 'stable within the day');
         $this->assertTrue(TigerWHM_Http::nonceOk($f, $n)); $this->assertFalse(TigerWHM_Http::nonceOk($f, 'nope'));
         @unlink($f);
+    }
+
+    /** TIGER-136: the host chooses live `main` or two pinned commits; junk pins fall back to live, and the URLs follow. */
+    public function testCatalogTrustModeIsLiveUnlessTwoFullShasPinIt(): void
+    {
+        $live = TigerWHM_Config::normalize(TigerWHM_Config::defaults());
+        $this->assertSame('live', $live['catalog']['mode']);
+        $this->assertStringContainsString('/TigerCatalog/main/catalog.json', TigerWHM_Catalog::url($live));
+        $this->assertStringContainsString('/TigerVendors/main/data/index.json', TigerWHM_Directory::url($live));
+        $half = TigerWHM_Config::normalize(['catalog' => ['mode' => 'pinned', 'catalog_ref' => str_repeat('a', 40), 'directory_ref' => 'main']] + TigerWHM_Config::defaults());
+        $this->assertSame('live', $half['catalog']['mode'], 'a branch name is not a pin');
+        $pin = TigerWHM_Config::normalize(['catalog' => ['mode' => 'pinned', 'catalog_ref' => str_repeat('A', 40), 'directory_ref' => str_repeat('b', 40)]] + TigerWHM_Config::defaults());
+        $this->assertSame('pinned', $pin['catalog']['mode']);
+        $this->assertSame('https://raw.githubusercontent.com/WebTigers/TigerCatalog/' . str_repeat('a', 40) . '/catalog.json', TigerWHM_Catalog::url($pin));
+        $this->assertSame('https://raw.githubusercontent.com/WebTigers/TigerVendors/' . str_repeat('b', 40) . '/data/index.json', TigerWHM_Directory::url($pin));
+        $this->assertLessThanOrEqual(5, TigerWHM_Catalog::FETCH_TIMEOUT, 'a page render never waits long on GitHub (TIGER-135)');
     }
 }

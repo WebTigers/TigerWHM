@@ -9,22 +9,33 @@
  */
 class TigerWHM_Directory
 {
+    const REPO      = 'WebTigers/TigerVendors';
     const INDEX_URL = 'https://raw.githubusercontent.com/WebTigers/TigerVendors/main/data/index.json';
     const CACHE_TTL = 3600;
+    /** Seconds a page render may spend here (see TigerWHM_Catalog::FETCH_TIMEOUT). */
+    const FETCH_TIMEOUT = 5;
+
+    /** The feed URL for the host's trust mode: `main` when live, the pinned commit otherwise. */
+    public static function url(?array $cfg = null)
+    {
+        $t = $cfg['catalog'] ?? [];
+        return ($t['mode'] ?? 'live') === 'pinned' ? 'https://raw.githubusercontent.com/' . self::REPO . '/' . $t['directory_ref'] . '/data/index.json' : self::INDEX_URL;
+    }
 
     /**
      * @param  string|null $cacheDir a writable dir for the cache (the account's home; null = no cache)
+     * @param  array|null  $cfg      host defaults (trust mode); null = live
      * @return array{themes:array,modules:array,available:bool}
      */
-    public static function installables($cacheDir = null)
+    public static function installables($cacheDir = null, ?array $cfg = null)
     {
-        $json = null;
-        $cache = $cacheDir ? rtrim($cacheDir, '/') . '/.tigerwhm-directory.json' : null;
+        $json = null; $url = self::url($cfg);
+        $cache = $cacheDir ? rtrim($cacheDir, '/') . '/.tigerwhm-directory' . (($cfg['catalog']['mode'] ?? '') === 'pinned' ? '-' . substr($cfg['catalog']['directory_ref'], 0, 12) : '') . '.json' : null;
         if ($cache && is_file($cache) && filemtime($cache) > time() - self::CACHE_TTL) {
             $json = (string) @file_get_contents($cache);
         }
         if ($json === null || $json === '') {
-            list($body, $code) = Tiger_Headless_Http::get(self::INDEX_URL, 'application/json');
+            list($body, $code) = Tiger_Headless_Http::get($url, 'application/json', self::FETCH_TIMEOUT);
             if ($body !== null && $code < 400 && json_decode($body, true)) {
                 $json = $body;
                 if ($cache) { @file_put_contents($cache, $json); @chmod($cache, 0600); }

@@ -33,6 +33,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/inst
 - **Host defaults** — pre-selected theme and modules, default language, a branding line on the
   account page, minimum PHP, an (unauthenticated) mail relay, whether accounts may mint an AI-agent
   credential. Stored in `/etc/tigerwhm/config.json` — world-readable by design, so it holds no secrets.
+- **Catalog trust** — what the install form reads: `live` (the catalog and Directory from `main`,
+  cached an hour — what WebTigers adds reaches new installs with no plugin update) or `pinned` (two
+  named commits and nothing else, until the host moves the pins). Every completed install writes what
+  it got and from where — core version, modules, each skill at its commit — to `~/.tigerwhm/installs.log`.
 - **Requirements gate** — accounts whose PHP is below the minimum, so the host can fix them in
   MultiPHP Manager before anyone hits the wall.
 

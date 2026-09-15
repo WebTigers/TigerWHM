@@ -77,11 +77,18 @@ class TigerWHM_Fleet
         return ['ok' => !empty($r['ok']), 'error' => $r['error'] ?? null, 'summary' => $r['summary'] ?? [], 'installs' => $rows];
     }
 
-    /** Update one install: as its account user, under its vhost's PHP (or the newest acceptable one). */
+    /**
+     * Update one install: as its account user, under its vhost's OWN PHP. Never a different binary —
+     * an update that succeeds under a newer CLI while the vhost still serves the old PHP leaves a
+     * site the web server cannot run. Below the minimum → refuse and name MultiPHP Manager.
+     */
     public function upgrade(array $row, $version = '')
     {
-        $php  = $row['php_bin'] ?: $this->_php;
+        $php  = $row['php_bin'] ?? null;
         $user = (string) $row['account'];
+        if (!$php) {
+            return ['ok' => false, 'error' => ['step' => 'php', 'message' => 'This site is served by ' . ($row['php'] ?: 'an unknown PHP') . ', below the host minimum ' . ($this->_cfg['min_php'] ?? 'ea-php81') . '. Set the vhost\'s PHP in MultiPHP Manager first; the update then runs under that exact binary.']];
+        }
         if ($user === '' || $user === 'root') { return ['ok' => false, 'error' => ['step' => 'account', 'message' => 'Cannot determine the account that owns ' . $row['app_root']]]; }
         return (new TigerWHM_Engine($php, $user))->upgrade((string) $row['app_root'], $version);
     }

@@ -11,20 +11,34 @@
  */
 class TigerWHM_Catalog
 {
+    const REPO      = 'WebTigers/TigerCatalog';
     const URL       = 'https://raw.githubusercontent.com/WebTigers/TigerCatalog/main/catalog.json';
     const CACHE_TTL = 3600;
+    /** Seconds a page render may spend fetching this (connect ≥ 3 s inside it); a hung GitHub → cache/snapshot. */
+    const FETCH_TIMEOUT = 5;
     const SNAPSHOT  = __DIR__ . '/../../cpanel/catalog.snapshot.json';
 
-    /** @return array{featured:array{theme:string,modules:array},skill_packs:array,intro:array|null,live:bool} */
-    public static function load($cacheDir = null)
+    /** The URL for the host's trust mode: `main` when live, the pinned commit otherwise. */
+    public static function url(?array $cfg = null)
     {
-        $json = null; $live = false;
-        $cache = $cacheDir ? rtrim($cacheDir, '/') . '/.tigerwhm-catalog.json' : null;
+        $t = $cfg['catalog'] ?? [];
+        return ($t['mode'] ?? 'live') === 'pinned' ? 'https://raw.githubusercontent.com/' . self::REPO . '/' . $t['catalog_ref'] . '/catalog.json' : self::URL;
+    }
+
+    /**
+     * @param  string|null $cacheDir
+     * @param  array|null  $cfg      host defaults (trust mode); null = live
+     * @return array{featured:array{theme:string,modules:array},skill_packs:array,intro:array|null,live:bool,source:string}
+     */
+    public static function load($cacheDir = null, ?array $cfg = null)
+    {
+        $json = null; $live = false; $url = self::url($cfg);
+        $cache = $cacheDir ? rtrim($cacheDir, '/') . '/.tigerwhm-catalog' . (($cfg['catalog']['mode'] ?? '') === 'pinned' ? '-' . substr($cfg['catalog']['catalog_ref'], 0, 12) : '') . '.json' : null;
         if ($cache && is_file($cache) && filemtime($cache) > time() - self::CACHE_TTL) {
             $json = (string) @file_get_contents($cache); $live = true;
         }
         if ($json === null || $json === '') {
-            list($body, $code) = Tiger_Headless_Http::get(self::URL, 'application/json');
+            list($body, $code) = Tiger_Headless_Http::get($url, 'application/json', self::FETCH_TIMEOUT);
             if ($body !== null && $code < 400 && is_array(json_decode($body, true))) {
                 $json = $body; $live = true;
                 if ($cache) { @file_put_contents($cache, $json); @chmod($cache, 0600); }
@@ -35,6 +49,7 @@ class TigerWHM_Catalog
         if (($json === null || $json === '') && is_file(self::SNAPSHOT)) { $json = (string) file_get_contents(self::SNAPSHOT); }
         $out = self::normalize(json_decode((string) $json, true));
         $out['live'] = $live;
+        $out['source'] = $url;
         return $out;
     }
 

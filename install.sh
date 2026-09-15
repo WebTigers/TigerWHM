@@ -5,7 +5,7 @@
 # TigerWHM — install or update the plugin on a WHM/cPanel server. Run as root:
 #
 #   bash <(curl -fsSL https://raw.githubusercontent.com/WebTigers/TigerWHM/main/install.sh)
-#   bash install.sh --version v1.0.0          # a specific release
+#   bash install.sh --version v1.0.1          # a specific release
 #   bash install.sh --from /path/to/checkout  # a local tree (development)
 #
 # Idempotent: re-running updates in place. What it does, and nothing else:

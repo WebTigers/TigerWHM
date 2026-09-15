@@ -38,7 +38,9 @@ if ($req->method === 'POST') {
             'locale' => $req->p('locale'), 'branding' => $req->p('branding'), 'min_php' => $req->p('min_php'),
             'mail' => ['transport' => $req->p('mail_transport'), 'host' => $req->p('mail_host'), 'port' => $req->p('mail_port', '25')],
             'allow_agent' => $req->p('allow_agent') === '1',
+            'catalog' => ['mode' => $req->p('catalog_mode'), 'catalog_ref' => $req->p('catalog_ref'), 'directory_ref' => $req->p('directory_ref')],
         ];
+        if ($req->p('catalog_mode') === 'pinned' && TigerWHM_Config::normalize($c)['catalog']['mode'] !== 'pinned') { $errors[] = 'Pinned mode needs two full 40-character commit shas (catalog and Directory); kept live.'; }
         if (TigerWHM_Config::save($c)) { $cfg = TigerWHM_Config::load(); $notice[] = 'Host defaults saved.'; }
         else { $errors[] = 'Could not write ' . TigerWHM_Config::PATH; }
     } elseif ($req->p('action') === 'upgrade') {
@@ -56,7 +58,7 @@ if ($req->method === 'POST') {
 $fl    = $fleet->installs(true);
 $below = $fleet->belowMinimum();
 $sum   = $fl['summary'] + ['live' => 0, 'updates_available' => null, 'latest' => null, 'versions' => []];
-$catalog = TigerWHM_Catalog::load('/var/cpanel/tigerwhm');
+$catalog = TigerWHM_Catalog::load('/var/cpanel/tigerwhm', $cfg);
 $pre     = TigerWHM_Config::preselect($cfg, $catalog);
 ?>
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Tiger — WHM</title>
@@ -96,18 +98,18 @@ code{background:#f1f3f5;padding:0 .25rem;border-radius:.2rem}
   <table><thead><tr><th></th><th>Account</th><th>Domain</th><th>App root</th><th>PHP</th><th>Version</th><th>Status</th></tr></thead><tbody>
   <?php foreach ($fl['installs'] as $i): $needs = !empty($i['update_available']); ?>
     <tr>
-      <td><?php if ($needs && $i['installed'] === true): ?><input type="checkbox" name="app_root[]" value="<?= $e($i['app_root']) ?>"><?php endif; ?></td>
+      <td><?php if ($needs && $i['installed'] === true && $i['php_bin']): ?><input type="checkbox" name="app_root[]" value="<?= $e($i['app_root']) ?>"><?php endif; ?></td>
       <td><?= $e($i['account']) ?></td>
       <td><?= $i['vhost'] !== '' ? '<a href="https://' . $e($i['vhost']) . '/admin" target="_blank">' . $e($i['vhost']) . '</a>' : '<span class="muted">' . $e($i['docroot'] ?? '—') . '</span>' ?></td>
       <td><code><?= $e($i['app_root']) ?></code><br><span class="muted"><?= $e($i['layout'] ?? '') ?> · db <?= $e($i['db']['name'] ?? '') ?></span></td>
-      <td><?= $e($i['php'] ?: '?') ?><?= ($i['php'] !== '' && !$i['php_bin']) ? ' <span class="bad">below minimum</span>' : '' ?></td>
+      <td><?= $e($i['php'] ?: '?') ?><?= !$i['php_bin'] ? ' <span class="bad" title="Set this vhost\'s PHP in MultiPHP Manager; updates run under the vhost\'s own PHP only">' . ($i['php'] !== '' ? 'below minimum' : 'unknown') . ' — not updatable</span>' : '' ?></td>
       <td><?= $e($i['version']) ?><?= $needs ? ' <span class="warn">→ ' . $e($i['latest']) . '</span>' : '' ?></td>
       <td><?= $i['installed'] === true ? '<span class="ok">live</span>' : ($i['installed'] === null ? '<span class="muted">unknown: ' . $e($i['db_error'] ?? '') . '</span>' : '<span class="bad">not finished</span>') ?></td>
     </tr>
   <?php endforeach; ?>
   <?php if (!$fl['installs']): ?><tr><td colspan="7" class="muted">No Tiger installs found under /home.</td></tr><?php endif; ?>
   </tbody></table>
-  <p><button class="btn" type="submit" onclick="return confirm('Update the selected installs now? Each runs as its own account user; Tiger backs up before swapping.')">Update selected</button>
+  <p><button class="btn" type="submit">Update selected</button> <span class="muted">each runs as its own account user under its vhost's PHP; Tiger backs up before swapping</span>
      <button class="btn sec" type="button" onclick="document.querySelectorAll('input[name=\'app_root[]\']').forEach(function(c){c.checked=true})">Select all needing an update</button></p>
   </form>
 </div>
@@ -116,7 +118,11 @@ code{background:#f1f3f5;padding:0 .25rem;border-radius:.2rem}
   <h2>Host defaults</h2>
   <p class="muted">What every account's Install Tiger form starts from. Stored in <code><?= $e(TigerWHM_Config::PATH) ?></code> (world-readable — no secrets go here).</p>
   <form method="post"><input type="hidden" name="action" value="defaults"><input type="hidden" name="nonce" value="<?= $e($nonce) ?>">
-    <p class="muted">The lists themselves — themes, modules, skill packs — come live from the public catalog (<code>WebTigers/TigerCatalog</code>, <?= $catalog['live'] ? 'reached' : 'unreachable, using the bundled snapshot' ?>); nothing here needs a plugin update when they change. Each row: follow the catalog's default, or set your own.</p>
+    <p class="muted">The lists themselves — themes, modules, skill packs — come from the public catalog (<code>WebTigers/TigerCatalog</code>) and Directory (<code>WebTigers/TigerVendors</code>): <b><?= $cfg['catalog']['mode'] === 'pinned' ? 'pinned' : 'live' ?></b>
+      <?= $cfg['catalog']['mode'] === 'pinned' ? '— catalog @ <code>' . $e(substr($cfg['catalog']['catalog_ref'], 0, 12)) . '</code>, Directory @ <code>' . $e(substr($cfg['catalog']['directory_ref'], 0, 12)) . '</code>; nothing changes until you move the pins' : '— read from <code>main</code> hourly; what WebTigers adds reaches new installs here with no plugin update' ?>
+      (<?= $catalog['live'] ? 'reached' : 'unreachable, using the last copy or the bundled snapshot' ?>). Each row: follow the catalog's default, or set your own.</p>
+    <div class="row"><label>Catalog trust</label><select name="catalog_mode"><option value="live" <?= $cfg['catalog']['mode'] === 'live' ? 'selected' : '' ?>>live — follow main</option><option value="pinned" <?= $cfg['catalog']['mode'] === 'pinned' ? 'selected' : '' ?>>pinned — only these commits</option></select></div>
+    <div class="row"><label>Pinned commits</label>catalog <input type="text" name="catalog_ref" size="42" value="<?= $e($cfg['catalog']['catalog_ref']) ?>" placeholder="40-hex commit of WebTigers/TigerCatalog"> &nbsp; Directory <input type="text" name="directory_ref" size="42" value="<?= $e($cfg['catalog']['directory_ref']) ?>" placeholder="40-hex commit of WebTigers/TigerVendors"></div>
     <div class="row"><label>Pre-selected theme</label><label><input type="checkbox" name="theme_follow" value="1" <?= $cfg['theme'] === null ? 'checked' : '' ?>> follow the catalog (<?= $e($catalog['featured']['theme'] ?: 'Tiger default') ?>)</label> <input type="text" name="theme" value="<?= $e((string) $cfg['theme']) ?>" placeholder="theme-grey-mist (blank = Tiger default)"></div>
     <div class="row"><label>Pre-ticked modules</label><label><input type="checkbox" name="modules_follow" value="1" <?= $cfg['modules'] === null ? 'checked' : '' ?>> follow the catalog (<?= $e(implode(', ', $catalog['featured']['modules']) ?: 'none') ?>)</label> <input type="text" name="modules" size="40" value="<?= $e(implode(',', (array) $cfg['modules'])) ?>" placeholder="docs,tigershield"></div>
     <div class="row"><label>Pre-ticked skill packs</label><label><input type="checkbox" name="packs_follow" value="1" <?= $cfg['skill_packs'] === null ? 'checked' : '' ?>> follow the catalog (<?= $e(implode(', ', array_column(array_filter($catalog['skill_packs'], fn ($p) => $p['default']), 'id')) ?: 'none') ?>)</label> <input type="text" name="packs" size="40" value="<?= $e(implode(',', (array) $cfg['skill_packs'])) ?>" placeholder="<?= $e(implode(',', array_column($catalog['skill_packs'], 'id'))) ?>"></div>

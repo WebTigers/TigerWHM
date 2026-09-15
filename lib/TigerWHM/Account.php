@@ -64,13 +64,37 @@ class TigerWHM_Account
         return $rows;
     }
 
-    /** Create a subdomain of the account's main domain (cPanel proposes public_html/<sub>). */
+    /**
+     * Create a subdomain of the account's main domain (cPanel proposes public_html/<sub>). Idempotent:
+     * a name the account already has is returned as-is, so a retry after a failed install never trips
+     * on "already exists".
+     */
     public function addSubdomain($sub, $rootDomain)
     {
         $sub = strtolower(trim((string) $sub));
         if (!preg_match('/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/', $sub)) { throw new InvalidArgumentException('Subdomain must be letters, digits and hyphens.'); }
+        $fqdn = $sub . '.' . $rootDomain;
+        foreach ($this->domains() as $d) { if (strcasecmp($d['domain'], $fqdn) === 0) { return $fqdn; } }
         $this->_api->uapi('SubDomain', 'addsubdomain', ['domain' => $sub, 'rootdomain' => $rootDomain, 'dir' => 'public_html/' . $sub]);
-        return $sub . '.' . $rootDomain;
+        return $fqdn;
+    }
+
+    /**
+     * Where the private application tree goes for a domain: the cPanel convention is
+     * <home>/<domain>/tiger-app — but an addon domain often has <home>/<domain> AS its document root,
+     * which would put the app inside the web tree. Then it goes to <home>/tiger-apps/<domain>. Either
+     * way the result is outside the docroot, which is what "above-docroot" means.
+     *
+     * @throws RuntimeException when nothing in the home is outside the docroot (docroot == home)
+     */
+    public function appRootFor(array $domain)
+    {
+        $doc = rtrim((string) $domain['docroot'], '/');
+        $inside = static function ($child, $parent) { return $child === $parent || strpos($child . '/', $parent . '/') === 0; };
+        foreach ([$this->_home . '/' . $domain['domain'] . '/tiger-app', $this->_home . '/tiger-apps/' . $domain['domain']] as $candidate) {
+            if (!$inside($candidate, $doc) && !$inside($doc, $candidate)) { return $candidate; }
+        }
+        throw new RuntimeException("The document root {$doc} leaves nowhere outside it for the application; choose another domain.");
     }
 
     // ------------------------------------------------------------------------------ database
@@ -100,6 +124,20 @@ class TigerWHM_Account
         $this->_api->uapi('Mysql', 'create_user',     ['name' => $names['user'], 'password' => $names['password']]);
         $this->_api->uapi('Mysql', 'set_privileges_on_database', ['user' => $names['user'], 'database' => $names['name'], 'privileges' => 'ALL PRIVILEGES']);
         return $names;
+    }
+
+    /**
+     * Undo provision() when the install never started (the requirements gate refused): nothing was
+     * extracted, nothing is in the database, so nothing is worth keeping. Best effort — a failure
+     * here is reported, not thrown, because the original error is the one the user needs.
+     * @return string[] what could not be removed
+     */
+    public function rollback(array $names)
+    {
+        $left = [];
+        try { $this->_api->uapi('Mysql', 'delete_user', ['name' => $names['user']]); } catch (Throwable $e) { $left[] = 'user ' . $names['user']; }
+        try { $this->_api->uapi('Mysql', 'delete_database', ['name' => $names['name']]); } catch (Throwable $e) { $left[] = 'database ' . $names['name']; }
+        return $left;
     }
 
     /**
@@ -149,7 +187,7 @@ class TigerWHM_Account
         $host = $domain['domain'];
         $spec = [
             'db'      => ['host' => 'localhost', 'name' => $db['name'], 'user' => $db['user'], 'password' => $db['password']],
-            'paths'   => ['app_root' => $this->_home . '/' . $host . '/tiger-app', 'docroot' => $domain['docroot']],
+            'paths'   => ['app_root' => $this->appRootFor($domain), 'docroot' => $domain['docroot']],
             'layout'  => 'above-docroot',
             'site'    => ['url' => (!empty($form['https']) ? 'https' : 'http') . '://' . $host, 'name' => (string) ($form['site_name'] ?? $host)],
             'admin'   => [
