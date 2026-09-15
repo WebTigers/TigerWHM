@@ -2,7 +2,10 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
-## [Unreleased]
+## [1.0.0] — 2026-09-15
+
+First stable release. The plugin every cPanel account gets: one-click Tiger installs, the fleet from WHM,
+and a page whose offer and copy come live from WebTigers/TigerCatalog.
 
 ### Added
 
