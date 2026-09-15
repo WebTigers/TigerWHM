@@ -55,8 +55,7 @@ headless installer changes, the plugin changes by bumping `ENGINE_VERSION`.
 ## Requirements
 
 cPanel & WHM with the Jupiter theme; EasyApache PHP 8.1+ available for the accounts that will install
-(`ea-php81` or newer — the WHM page lists any account below it). MariaDB or MySQL 8. `symlink()` may be
-disabled for accounts; assets are copied then.
+(`ea-php81` or newer — the WHM page lists any account below it). MariaDB or MySQL 8.
 
 ## Development
 
