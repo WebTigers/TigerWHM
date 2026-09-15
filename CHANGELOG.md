@@ -2,6 +2,14 @@
 
 All notable changes to **TigerWHM**. Format follows [Keep a Changelog](https://keepachangelog.com/); SemVer.
 
+## [1.0.3] — 2026-09-15
+
+### Fixed
+
+- Engine **tiger-headless 1.2.1**: the `.htaccess` Authorization pass-through is mod_rewrite only.
+  1.2.0's `CGIPassAuth On` needs `AllowOverride AuthConfig` — fine under cPanel's `All`, a hard 500
+  anywhere a vhost grants only FileInfo. A fleet update now repairs any `.htaccess` that carries it.
+
 ## [1.0.2] — 2026-09-15
 
 ### Changed
